@@ -11,7 +11,6 @@
 #pragma once
 
 #import <UIKit/UIKit.h>
-#import <AsyncDisplayKit/ASDealloc2MainObject.h>
 #import <AsyncDisplayKit/ASDimension.h>
 #import <AsyncDisplayKit/ASFlowLayoutController.h>
 
@@ -107,7 +106,7 @@ FOUNDATION_EXPORT NSString * const ASDataControllerRowNodeKind;
  * For each data updating, the corresponding methods in delegate will be called.
  */
 @protocol ASFlowLayoutControllerDataSource;
-@interface ASDataController : ASDealloc2MainObject <ASFlowLayoutControllerDataSource>
+@interface ASDataController : NSObject <ASFlowLayoutControllerDataSource>
 
 - (instancetype)initWithDataSource:(id<ASDataControllerSource>)dataSource NS_DESIGNATED_INITIALIZER;
 

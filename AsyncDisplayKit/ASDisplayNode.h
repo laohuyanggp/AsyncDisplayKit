@@ -12,7 +12,6 @@
 
 #import <AsyncDisplayKit/_ASAsyncTransactionContainer.h>
 #import <AsyncDisplayKit/ASBaseDefines.h>
-#import <AsyncDisplayKit/ASDealloc2MainObject.h>
 #import <AsyncDisplayKit/ASDimension.h>
 #import <AsyncDisplayKit/ASAsciiArtBoxCreator.h>
 #import <AsyncDisplayKit/ASLayoutElement.h>
@@ -104,7 +103,7 @@ extern NSInteger const ASDefaultDrawingPriority;
  *
  */
 
-@interface ASDisplayNode : ASDealloc2MainObject <ASLayoutElement>
+@interface ASDisplayNode : NSObject <ASLayoutElement>
 
 /** @name Initializing a node object */
 

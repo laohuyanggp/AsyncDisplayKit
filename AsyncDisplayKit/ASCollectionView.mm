@@ -207,6 +207,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
     unsigned int numberOfSectionsInCollectionNode:1;
     unsigned int collectionNodeNumberOfItemsInSection:1;
     unsigned int collectionNodeContextForSection:1;
+    unsigned int updateDataForCollectionNode:1;
   } _asyncDataSourceFlags;
   
   struct {
@@ -381,6 +382,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
     _asyncDataSource = asyncDataSource;
     _proxyDataSource = [[ASCollectionViewProxy alloc] initWithTarget:_asyncDataSource interceptor:self];
     
+    _asyncDataSourceFlags.updateDataForCollectionNode = [_asyncDelegate respondsToSelector:@selector(dataForCollectionNode:)];
     _asyncDataSourceFlags.collectionViewNodeForItem = [_asyncDataSource respondsToSelector:@selector(collectionView:nodeForItemAtIndexPath:)];
     _asyncDataSourceFlags.collectionViewNodeBlockForItem = [_asyncDataSource respondsToSelector:@selector(collectionView:nodeBlockForItemAtIndexPath:)];
     _asyncDataSourceFlags.numberOfSectionsInCollectionView = [_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)];
@@ -394,6 +396,18 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
     _asyncDataSourceFlags.collectionNodeContextForSection = [_asyncDataSource respondsToSelector:@selector(collectionNode:contextForSection:)];
     _asyncDataSourceFlags.collectionNodeNodeForSupplementaryElement = [_asyncDataSource respondsToSelector:@selector(collectionNode:nodeForSupplementaryElementOfKind:atIndexPath:)];
 
+
+    // If they implement the functional method, they should not implement the other ones.
+    if (_asyncDataSourceFlags.updateDataForCollectionNode) {
+      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionNode:)]);
+      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)]);
+      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:numberOfItemsInSection:)]);
+      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:numberOfItemsInSection:)]);
+      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeBlockForItemAtIndexPath:)]);
+      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeBlockForItemAtIndexPath:)]);
+      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeForItemAtIndexPath:)]);
+      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeForItemAtIndexPath:)]);
+    }
 
     ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNumberOfItemsInSection || _asyncDataSourceFlags.collectionViewNumberOfItemsInSection, @"Data source must implement collectionNode:numberOfItemsInSection:");
     ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNodeBlockForItem

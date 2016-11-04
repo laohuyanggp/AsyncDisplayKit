@@ -12,7 +12,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface NSArray (Diffing)
+@interface NSArray<__covariant ObjectType> (Diffing)
 
 /**
  * @abstract Compares two arrays, providing the insertion and deletion indexes needed to transform into the target array.
@@ -20,7 +20,7 @@
  * This diffing algorithm uses a bottom-up memoized longest common subsequence solution to identify differences.
  * It runs in O(mn) complexity.
  */
-- (void)asdk_diffWithArray:(NSArray *)array insertions:(NSIndexSet **)insertions deletions:(NSIndexSet **)deletions;
+- (void)asdk_diffWithArray:(NSArray<ObjectType> *)array insertions:(NSIndexSet **)insertions deletions:(NSIndexSet **)deletions;
 
 /**
  * @abstract Compares two arrays, providing the insertion and deletion indexes needed to transform into the target array.
@@ -30,4 +30,13 @@
  */
 - (void)asdk_diffWithArray:(NSArray *)array insertions:(NSIndexSet **)insertions deletions:(NSIndexSet **)deletions compareBlock:(BOOL (^)(id lhs, id rhs))comparison;
 
+/**
+ * @abstract A two-dimensional variant of @c asdk_diffWithArray that computes diffs at both the outer (section) and inner (item) levels.
+ */
+- (void)asdk_nestedDiffWithArray:(NSArray<ObjectType> *)nestedArray
+                insertedSections:(NSIndexSet **)insertedSections
+                 deletedSections:(NSIndexSet **)deletedSections
+                   insertedItems:(NSArray<NSIndexPath *> **)insertedItems
+                    deletedItems:(NSArray<NSIndexPath *> **)deletedItems
+										nestingBlock:(__attribute((noescape)) NSArray *(^)(ObjectType object))nestingBlock;
 @end

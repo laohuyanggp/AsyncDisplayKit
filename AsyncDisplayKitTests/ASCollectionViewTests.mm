@@ -10,6 +10,7 @@
 
 #import <XCTest/XCTest.h>
 #import "ASCollectionView.h"
+#import "ASCollectionData.h"
 #import "ASCollectionDataController.h"
 #import "ASCollectionViewFlowLayoutInspector.h"
 #import "ASCellNode.h"
@@ -56,28 +57,66 @@
 @end
 
 @interface ASCollectionViewTestDelegate : NSObject <ASCollectionDataSource, ASCollectionDelegate, UICollectionViewDelegateFlowLayout>
+@property (nonatomic, assign) BOOL useFunctionalStyle;
+
 
 @property (nonatomic, assign) NSInteger sectionGeneration;
-
+@property (nonatomic, strong) NSMutableArray<NSString *> *sections;
+@property (nonatomic, strong) NSMutableArray<NSMutableArray<NSString *> *> *items;
 @end
 
 @implementation ASCollectionViewTestDelegate {
-  @package
-  std::vector<NSInteger> _itemCounts;
 }
 
 - (id)initWithNumberOfSections:(NSInteger)numberOfSections numberOfItemsInSection:(NSInteger)numberOfItemsInSection {
   if (self = [super init]) {
-    for (NSInteger i = 0; i < numberOfSections; i++) {
-      _itemCounts.push_back(numberOfItemsInSection);
-    }
+    _sections = [NSMutableArray arrayWithObjects:@"Section A", @"Section B", @"Section C", nil];
+    _items = [NSMutableArray arrayWithObjects:
+              [NSMutableArray arrayWithObjects:@"Item A", @"Item B", @"Item C", nil],
+              [NSMutableArray arrayWithObjects:@"Item D", @"Item E", @"Item F", nil],
+              [NSMutableArray arrayWithObjects:@"Item G", @"Item H", @"Item I", nil], nil];
     _sectionGeneration = 1;
   }
 
   return self;
 }
 
-- (ASCellNode *)collectionView:(ASCollectionView *)collectionView nodeForItemAtIndexPath:(NSIndexPath *)indexPath {
+- (BOOL)respondsToSelector:(SEL)aSelector
+{
+  if (aSelector == @selector(dataForCollectionNode:)) {
+    return _useFunctionalStyle;
+  } else if (aSelector == @selector(collectionNode:nodeForItemAtIndexPath:)) {
+    return _useFunctionalStyle == NO;
+  } else if (aSelector == @selector(collectionNode:nodeBlockForItemAtIndexPath:)) {
+    return _useFunctionalStyle == NO;
+  } else if (aSelector == @selector(collectionNode:numberOfItemsInSection:)) {
+    return _useFunctionalStyle == NO;
+  } else if (aSelector == @selector(numberOfSectionsInCollectionNode:)) {
+    return _useFunctionalStyle == NO;
+  } else {
+    return [super respondsToSelector:aSelector];
+  }
+}
+
+- (id<ASCollectionData>)dataForCollectionNode:(ASCollectionNode *)collectionNode
+{
+  ASDisplayNodeAssert(_useFunctionalStyle, nil);
+  id<ASCollectionData> data = [collectionNode createNewData];
+  [_sections enumerateObjectsUsingBlock:^(NSString *sectionID, NSUInteger idx, BOOL * _Nonnull stop) {
+    [data addSectionWithIdentifier:sectionID block:^(id<ASCollectionData> data) {
+      for (NSString *item in _items[idx]) {
+        [data addItemWithIdentifier:item nodeBlock:^{
+          return [[ASCellNode alloc] init];
+        }];
+      }
+    }];
+  }];
+  return data;
+}
+
+- (ASCellNode *)collectionNode:(ASCollectionNode *)collectionNode nodeForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+  ASDisplayNodeAssertFalse(_useFunctionalStyle);
   ASTextCellNodeWithSetSelectedCounter *textCellNode = [ASTextCellNodeWithSetSelectedCounter new];
   textCellNode.text = indexPath.description;
 
@@ -85,7 +124,9 @@
 }
 
 
-- (ASCellNodeBlock)collectionView:(ASCollectionView *)collectionView nodeBlockForItemAtIndexPath:(NSIndexPath *)indexPath {
+- (ASCellNodeBlock)collectionNode:(ASCollectionNode *)collectionNode nodeBlockForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+  ASDisplayNodeAssertFalse(_useFunctionalStyle);
   return ^{
     ASTextCellNodeWithSetSelectedCounter *textCellNode = [ASTextCellNodeWithSetSelectedCounter new];
     textCellNode.text = indexPath.description;
@@ -103,12 +144,15 @@
   ASDisplayNodeAssertNotNil(node.layoutAttributes, @"Expected layout attributes for node in %@ to be non-nil.", NSStringFromSelector(_cmd));
 }
 
-- (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView {
-  return _itemCounts.size();
+- (NSInteger)numberOfSectionsInCollectionNode:(ASCollectionNode *)collectionNode {
+  ASDisplayNodeAssertFalse(_useFunctionalStyle);
+  return _sections.count;
 }
 
-- (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-  return _itemCounts[section];
+- (NSInteger)collectionNode:(ASCollectionNode *)collectionNode numberOfItemsInSection:(NSInteger)section
+{
+  ASDisplayNodeAssertFalse(_useFunctionalStyle);
+  return _items[section].count;
 }
 
 - (id<ASSectionContext>)collectionNode:(ASCollectionNode *)collectionNode contextForSection:(NSInteger)section
@@ -124,7 +168,7 @@
   return CGSizeMake(100, 100);
 }
 
-- (ASCellNode *)collectionView:(ASCollectionView *)collectionView nodeForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+- (ASCellNode *)collectionNode:(ASCollectionNode *)collectionNode nodeForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
 {
   return [[ASCellNode alloc] init];
 }
@@ -225,11 +269,11 @@
   };
 
   // Check if the number of sections matches the data source
-  XCTAssertEqual(cn.numberOfSections, del->_itemCounts.size(), @"Section count doesn't match the data source");
+  XCTAssertEqual(cn.numberOfSections, del.sections.count, @"Section count doesn't match the data source");
 
   // Reset everything and then check if numberOfItemsInSection matches the data source
   reset();
-  XCTAssertEqual([cn numberOfItemsInSection:0], del->_itemCounts[0], @"Number of items in Section doesn't match the data source");
+  XCTAssertEqual([cn numberOfItemsInSection:0], del.items[0].count, @"Number of items in Section doesn't match the data source");
 
   // Reset and check if we can get the node corresponding to a specific indexPath
   reset();
@@ -388,16 +432,16 @@
 - (void)testThatSubmittingAValidInsertDoesNotThrowAnException
 {
   updateValidationTestPrologue
-  NSInteger sectionCount = del->_itemCounts.size();
-  
-  del->_itemCounts[sectionCount - 1]++;
+  NSInteger sectionCount = del.sections.count;
+
+  [del.items[sectionCount - 1] addObject:[NSUUID UUID].UUIDString];
   XCTAssertNoThrow([cv insertItemsAtIndexPaths:@[ [NSIndexPath indexPathForItem:0 inSection:sectionCount - 1] ]]);
 }
 
 - (void)testThatSubmittingAValidReloadDoesNotThrowAnException
 {
   updateValidationTestPrologue
-  NSInteger sectionCount = del->_itemCounts.size();
+  NSInteger sectionCount = del.sections.count;
   
   XCTAssertNoThrow([cv reloadItemsAtIndexPaths:@[ [NSIndexPath indexPathForItem:0 inSection:sectionCount - 1] ]]);
 }
@@ -405,7 +449,7 @@
 - (void)testThatSubmittingAnInvalidInsertThrowsAnException
 {
   updateValidationTestPrologue
-  NSInteger sectionCount = del->_itemCounts.size();
+  NSInteger sectionCount = del.sections.count;
   
   XCTAssertThrows([cv insertItemsAtIndexPaths:@[ [NSIndexPath indexPathForItem:0 inSection:sectionCount + 1] ]]);
 }
@@ -413,7 +457,7 @@
 - (void)testThatSubmittingAnInvalidDeleteThrowsAnException
 {
   updateValidationTestPrologue
-  NSInteger sectionCount = del->_itemCounts.size();
+  NSInteger sectionCount = del.sections.count;
   
   XCTAssertThrows([cv deleteItemsAtIndexPaths:@[ [NSIndexPath indexPathForItem:0 inSection:sectionCount + 1] ]]);
 }
@@ -448,17 +492,18 @@
   updateValidationTestPrologue
   
   XCTAssertThrows([cv performBatchUpdates:^{
-    del->_itemCounts[0]++;
+    [del.items[0] addObject:[NSUUID UUID].UUIDString];
   } completion:nil]);
 }
 
 - (void)testThatInsertingAnInvalidSectionThrowsAnException
 {
   updateValidationTestPrologue
-  NSInteger sectionCount = del->_itemCounts.size();
-  
-  del->_itemCounts.push_back(10);
+  NSInteger sectionCount = del.sections.count;
+
   XCTAssertThrows([cv performBatchUpdates:^{
+    [del.sections addObject:[NSUUID UUID].UUIDString];
+    [del.items addObject:[NSMutableArray array]];
     [cv insertSections:[NSIndexSet indexSetWithIndex:sectionCount + 1]];
   } completion:nil]);
 }
@@ -466,9 +511,10 @@
 - (void)testThatDeletingAndReloadingASectionThrowsAnException
 {
   updateValidationTestPrologue
-  NSInteger sectionCount = del->_itemCounts.size();
-  
-  del->_itemCounts.pop_back();
+  NSInteger sectionCount = del.sections.count;
+
+  [del.sections removeLastObject];
+  [del.items removeLastObject];
   XCTAssertThrows([cv performBatchUpdates:^{
     NSIndexSet *sections = [NSIndexSet indexSetWithIndex:sectionCount - 1];
     [cv reloadSections:sections];
@@ -516,29 +562,31 @@
   XCTAssertTrue(cell.indexPath.section == indexPath.section && cell.indexPath.item == indexPath.item, @"Expected the cell's indexPath to be the same as the indexPath being tested.");
 
   // Remove an item prior to the cell's indexPath from the same section and check for indexPath consistency
-  --del->_itemCounts[indexPath.section];
+  [del.items[indexPath.section] removeObjectAtIndex:0];
   [cn deleteItemsAtIndexPaths:@[[NSIndexPath indexPathForItem:0 inSection:indexPath.section]]];
   XCTAssertTrue(cell.indexPath.section == indexPath.section && cell.indexPath.item == (indexPath.item - 1), @"Expected the cell's indexPath to be updated once a cell with a lower index is deleted.");
 
   // Remove the section that includes the indexPath and check if the cell's indexPath is now nil
-  del->_itemCounts.erase(del->_itemCounts.begin());
+  [del.items removeObjectAtIndex:0];
+  [del.sections removeObjectAtIndex:0];
   [cn deleteSections:[NSIndexSet indexSetWithIndex:indexPath.section]];
   XCTAssertNil(cell.indexPath, @"Expected the cell's indexPath to be nil once the section that contains the node is deleted.");
 
   // Run the same tests but with a non-displayed cell
-  indexPath = [NSIndexPath indexPathForItem:2 inSection:(del->_itemCounts.size() - 1)];
+  indexPath = [NSIndexPath indexPathForItem:2 inSection:(del.sections.count - 1)];
   cell = [cn nodeForItemAtIndexPath:indexPath];
 
   // Check if cell's indexPath corresponds to the indexPath being tested
   XCTAssertTrue(cell.indexPath.section == indexPath.section && cell.indexPath.item == indexPath.item, @"Expected the cell's indexPath to be the same as the indexPath in question.");
 
   // Remove an item prior to the cell's indexPath from the same section and check for indexPath consistency
-  --del->_itemCounts[indexPath.section];
+  [del.items[indexPath.section] removeObjectAtIndex:0];
   [cn deleteItemsAtIndexPaths:@[[NSIndexPath indexPathForItem:0 inSection:indexPath.section]]];
   XCTAssertTrue(cell.indexPath.section == indexPath.section && cell.indexPath.item == (indexPath.item - 1), @"Expected the cell's indexPath to be updated once a cell with a lower index is deleted.");
 
   // Remove the section that includes the indexPath and check if the cell's indexPath is now nil
-  del->_itemCounts.pop_back();
+  [del.sections removeLastObject];
+  [del.items removeLastObject];
   [cn deleteSections:[NSIndexSet indexSetWithIndex:indexPath.section]];
   XCTAssertNil(cell.indexPath, @"Expected the cell's indexPath to be nil once the section that contains the node is deleted.");
 }
@@ -675,7 +723,7 @@
 - (void)testThatSectionContextsAreCorrectAfterTheInitialLayout
 {
   updateValidationTestPrologue
-  NSInteger sectionCount = del->_itemCounts.size();
+  NSInteger sectionCount = del.sections.count;
   for (NSInteger section = 0; section < sectionCount; section++) {
     ASTestSectionContext *context = (ASTestSectionContext *)[cn contextForSection:section];
     XCTAssertNotNil(context);
@@ -687,7 +735,7 @@
 - (void)testThatSectionContextsAreCorrectAfterSectionMove
 {
   updateValidationTestPrologue
-  NSInteger sectionCount = del->_itemCounts.size();
+  NSInteger sectionCount = del.sections.count;
   NSInteger originalSection = sectionCount - 1;
   NSInteger toSection = 0;
 
@@ -720,7 +768,7 @@
   del.sectionGeneration++;
   [cv reloadDataImmediately];
   
-  NSInteger sectionCount = del->_itemCounts.size();
+  NSInteger sectionCount = del.sections.count;
   for (NSInteger section = 0; section < sectionCount; section++) {
     ASTestSectionContext *context = (ASTestSectionContext *)[cn contextForSection:section];
     XCTAssertNotNil(context);
@@ -738,7 +786,7 @@
   [cv reloadSections:[NSIndexSet indexSetWithIndex:sectionToReload]];
   [cv waitUntilAllUpdatesAreCommitted];
   
-  NSInteger sectionCount = del->_itemCounts.size();
+  NSInteger sectionCount = del.sections.count;
   for (NSInteger section = 0; section < sectionCount; section++) {
     ASTestSectionContext *context = (ASTestSectionContext *)[cn contextForSection:section];
     XCTAssertNotNil(context);
@@ -756,7 +804,8 @@
   cv.asyncDelegate = del;
 
   // Add a section to the data source
-  del->_itemCounts.push_back(0);
+  [del.items addObject:[NSMutableArray array]];
+  [del.sections addObject:[NSUUID UUID].UUIDString];
   // Attempt to insert section into collection view. We ignore it to workaround
   // the bug demonstrated by
   // ASUICollectionViewTests.testThatIssuingAnUpdateBeforeInitialReloadIsUnacceptable
@@ -771,15 +820,16 @@
   // Insert an item and assert nodeForItemAtIndexPath: immediately returns new node
   ASCellNode *oldNode = [cn nodeForItemAtIndexPath:indexPath];
   XCTAssertNotNil(oldNode);
-  del->_itemCounts[0] += 1;
+  [del.items[0] addObject:[NSUUID UUID].UUIDString];
   [cv insertItemsAtIndexPaths:@[ indexPath ]];
   ASCellNode *newNode = [cn nodeForItemAtIndexPath:indexPath];
   XCTAssertNotNil(newNode);
   XCTAssertNotEqualObjects(oldNode, newNode);
 
   // Delete all sections and assert nodeForItemAtIndexPath: immediately returns nil
-  NSIndexSet *sections = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, del->_itemCounts.size())];
-  del->_itemCounts.clear();
+  NSIndexSet *sections = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, del.sections.count)];
+  [del.sections removeAllObjects];
+  [del.items removeAllObjects];
   [cv deleteSections:sections];
   XCTAssertNil([cn nodeForItemAtIndexPath:indexPath]);
 }
@@ -796,6 +846,41 @@
   ASCellNode *newHeader = [cv supplementaryNodeForElementKind:UICollectionElementKindSectionHeader atIndexPath:indexPath];
   XCTAssertNotNil(newHeader);
   XCTAssertNotEqualObjects(oldHeader, newHeader);
+}
+
+- (void)testFunctionalDataLoad
+{
+  ASCollectionViewTestController *ctrl = [[ASCollectionViewTestController alloc] init];
+  ASCollectionViewTestDelegate *del = ctrl.asyncDelegate;
+  del.useFunctionalStyle = YES;
+
+  XCTAssertEqual(del.sections.count, ctrl.collectionNode.numberOfSections);
+  [del.items enumerateObjectsUsingBlock:^(NSMutableArray<NSString *> * itemArray, NSUInteger section, BOOL * _Nonnull stop) {
+    XCTAssertEqual(itemArray.count, [ctrl.collectionNode numberOfItemsInSection:section]);
+  }];
+}
+
+- (void)testFunctionalDataUpdate
+{
+  ASCollectionViewTestController *ctrl = [[ASCollectionViewTestController alloc] init];
+  ASCollectionViewTestDelegate *del = ctrl.asyncDelegate;
+  del.useFunctionalStyle = YES;
+
+  // Weak so that compiler won't whine about retain cycle.
+  __weak ASCollectionNode *node = ctrl.collectionNode;
+  [ctrl.view layoutIfNeeded];
+  [node waitUntilAllUpdatesAreCommitted];
+  [del.sections insertObject:@"Section X" atIndex:1];
+  [del.items insertObject:[NSMutableArray arrayWithObjects:@"Item X", @"Item Y", nil] atIndex:1];
+  XCTestExpectation *updateCompletionExpectation = [self expectationWithDescription:@"Update did finish"];
+  [node setNeedsUpdateWithCompletion:^(BOOL finished) {
+    XCTAssertEqual([node.view numberOfSections], del.sections.count);
+    [del.items enumerateObjectsUsingBlock:^(NSMutableArray<NSString *> * _Nonnull items, NSUInteger section, BOOL * _Nonnull stop) {
+      XCTAssertEqual([node.view numberOfItemsInSection:section], items.count);
+    }];
+    [updateCompletionExpectation fulfill];
+  }];
+  [self waitForExpectationsWithTimeout:60 handler:nil];
 }
 
 @end

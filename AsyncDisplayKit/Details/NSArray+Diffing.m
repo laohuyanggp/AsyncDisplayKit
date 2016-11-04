@@ -12,6 +12,10 @@
 
 #import "NSArray+Diffing.h"
 #import "ASAssert.h"
+#import "NSIndexSet+ASHelpers.h"
+
+// This is required to get +indexPathForItem:inSection: which uses tagged pointers for performance.
+#import <UIKit/UICollectionView.h>
 
 @implementation NSArray (Diffing)
 
@@ -24,9 +28,22 @@
 
 - (void)asdk_diffWithArray:(NSArray *)array insertions:(NSIndexSet **)insertions deletions:(NSIndexSet **)deletions compareBlock:(BOOL (^)(id lhs, id rhs))comparison
 {
+  [self asdk_diffWithArray:array insertions:insertions deletions:deletions commons:nil compareBlock:comparison];
+}
+
+- (void)asdk_diffWithArray:(NSArray *)array insertions:(NSIndexSet **)insertions deletions:(NSIndexSet **)deletions commons:(NSIndexSet **)commons compareBlock:(BOOL (^)(id lhs, id rhs))comparison
+{
   NSAssert(comparison != nil, @"Comparison block is required");
   NSIndexSet *commonIndexes = [self _asdk_commonIndexesWithArray:array compareBlock:comparison];
-  
+
+  if (commons) {
+    *commons = commonIndexes;
+  }
+
+  if (commonIndexes.count == self.count) {
+    return;
+  }
+
   if (insertions) {
     NSArray *commonObjects = [self objectsAtIndexes:commonIndexes];
     NSMutableIndexSet *insertionIndexes = [NSMutableIndexSet indexSet];
@@ -42,12 +59,8 @@
   }
   
   if (deletions) {
-    NSMutableIndexSet *deletionIndexes = [NSMutableIndexSet indexSet];
-    for (NSInteger i = 0; i < self.count; i++) {
-      if (![commonIndexes containsIndex:i]) {
-        [deletionIndexes addIndex:i];
-      }
-    }
+    NSMutableIndexSet *deletionIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, self.count)];
+    [deletionIndexes removeIndexes:commonIndexes];
     *deletions = deletionIndexes;
   }
 }
@@ -98,6 +111,52 @@
   }
   
   return common;
+}
+
+- (void)asdk_nestedDiffWithArray:(NSArray *)nestedArray
+                insertedSections:(NSIndexSet **)insertedSections
+                 deletedSections:(NSIndexSet **)deletedSections
+                   insertedItems:(NSArray<NSIndexPath *> **)insertedItems
+                    deletedItems:(NSArray<NSIndexPath *> **)deletedItems
+                    nestingBlock:(__attribute((noescape)) NSArray *(^)(id object))nestingBlock;
+{
+  NSIndexSet *survivingSections = nil;
+  NSMutableArray<NSIndexPath *> *mutableInsertedItems = [NSMutableArray array];
+  NSMutableArray<NSIndexPath *> *mutableDeletedItems = [NSMutableArray array];
+
+  [self asdk_diffWithArray:nestedArray insertions:insertedSections deletions:deletedSections commons:&survivingSections compareBlock:^BOOL(id lhs, id rhs) {
+    return [lhs isEqual:rhs];
+  }];
+  // Would prefer to use ASDN::Mutex but:
+  // 1. It doesn't play well with __block
+  // 2. This file contains code that won't build under C++ (lengths = lengthsData.mutableBytes;)
+  __block pthread_mutex_t lock;
+  ASDisplayNodeAssert(pthread_mutex_init(&lock, NULL) == 0, @"Failed to init lock.");
+  [self enumerateObjectsAtIndexes:survivingSections options:NSEnumerationConcurrent usingBlock:^(id  _Nonnull oldSection, NSUInteger oldSectionIndex, BOOL * _Nonnull stop) {
+    NSUInteger newSectionIndex = oldSectionIndex;
+    newSectionIndex -= [*deletedSections countOfIndexesInRange:NSMakeRange(0, oldSectionIndex)];
+    newSectionIndex += [*insertedSections as_indexChangeByInsertingItemsBelowIndex:oldSectionIndex];
+
+    id newSection = nestedArray[newSectionIndex];
+    NSArray *oldItems = nestingBlock(oldSection);
+    NSArray *newItems = nestingBlock(newSection);
+    NSIndexSet *deletedItemsInSection = nil, *insertedItemsInSection = nil;
+    [oldItems asdk_diffWithArray:newItems insertions:&insertedItemsInSection deletions:&deletedItemsInSection];
+
+    // Technically we could just lock around the -addObject call but this is simpler and
+    // the performance difference would probably be a wash.
+    ASDisplayNodeAssert(pthread_mutex_lock(&lock) == 0, @"Failed to acquire lock");
+    [deletedItemsInSection enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL * _Nonnull stop) {
+      [mutableDeletedItems addObject:[NSIndexPath indexPathForItem:idx inSection:oldSectionIndex]];
+    }];
+    [insertedItemsInSection enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL * _Nonnull stop) {
+      [mutableInsertedItems addObject:[NSIndexPath indexPathForItem:idx inSection:newSectionIndex]];
+    }];
+    ASDisplayNodeAssert(pthread_mutex_unlock(&lock) == 0, @"Failed to release lock");
+  }];
+  ASDisplayNodeAssert(pthread_mutex_destroy(&lock) == 0, @"Failed to destroy lock.");
+  *insertedItems = mutableInsertedItems;
+  *deletedItems = mutableDeletedItems;
 }
 
 @end

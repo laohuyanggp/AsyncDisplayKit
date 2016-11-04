@@ -428,6 +428,7 @@
 		CC051F1F1D7A286A006434CB /* ASCALayerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = CC051F1E1D7A286A006434CB /* ASCALayerTests.m */; };
 		CC0AEEA41D66316E005D1C78 /* ASUICollectionViewTests.m in Sources */ = {isa = PBXBuildFile; fileRef = CC0AEEA31D66316E005D1C78 /* ASUICollectionViewTests.m */; };
 		CC11F97A1DB181180024D77B /* ASNetworkImageNodeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = CC11F9791DB181180024D77B /* ASNetworkImageNodeTests.m */; };
+		CC2821381DCD035A006A2377 /* ASCollectionData.m in Sources */ = {isa = PBXBuildFile; fileRef = CC2821371DCD035A006A2377 /* ASCollectionData.m */; };
 		CC3B20841C3F76D600798563 /* ASPendingStateController.h in Headers */ = {isa = PBXBuildFile; fileRef = CC3B20811C3F76D600798563 /* ASPendingStateController.h */; };
 		CC3B20851C3F76D600798563 /* ASPendingStateController.mm in Sources */ = {isa = PBXBuildFile; fileRef = CC3B20821C3F76D600798563 /* ASPendingStateController.mm */; };
 		CC3B20861C3F76D600798563 /* ASPendingStateController.mm in Sources */ = {isa = PBXBuildFile; fileRef = CC3B20821C3F76D600798563 /* ASPendingStateController.mm */; };
@@ -1120,6 +1121,8 @@
 		CC051F1E1D7A286A006434CB /* ASCALayerTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ASCALayerTests.m; sourceTree = "<group>"; };
 		CC0AEEA31D66316E005D1C78 /* ASUICollectionViewTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ASUICollectionViewTests.m; sourceTree = "<group>"; };
 		CC11F9791DB181180024D77B /* ASNetworkImageNodeTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ASNetworkImageNodeTests.m; sourceTree = "<group>"; };
+		CC2821361DCD035A006A2377 /* ASCollectionData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ASCollectionData.h; sourceTree = "<group>"; };
+		CC2821371DCD035A006A2377 /* ASCollectionData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ASCollectionData.m; sourceTree = "<group>"; };
 		CC2E317F1DAC353700EEE891 /* ASCollectionView+Undeprecated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ASCollectionView+Undeprecated.h"; sourceTree = "<group>"; };
 		CC3B20811C3F76D600798563 /* ASPendingStateController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ASPendingStateController.h; sourceTree = "<group>"; };
 		CC3B20821C3F76D600798563 /* ASPendingStateController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ASPendingStateController.mm; sourceTree = "<group>"; };
@@ -1286,6 +1289,8 @@
 		058D09B1195D04C000B7D73C /* AsyncDisplayKit */ = {
 			isa = PBXGroup;
 			children = (
+				CC2821361DCD035A006A2377 /* ASCollectionData.h */,
+				CC2821371DCD035A006A2377 /* ASCollectionData.m */,
 				DBDB83921C6E879900D0098C /* ASPagerFlowLayout.h */,
 				DBDB83931C6E879900D0098C /* ASPagerFlowLayout.m */,
 				92DD2FE11BF4B97E0074C9DD /* ASMapNode.h */,
@@ -2160,6 +2165,7 @@
 				058D0A19195D050800B7D73C /* _ASDisplayView.mm in Sources */,
 				9C55866A1BD549CB00B50E3A /* ASAsciiArtBoxCreator.m in Sources */,
 				69708BA71D76386D005C3CF9 /* ASEqualityHashHelpers.mm in Sources */,
+				CC2821381DCD035A006A2377 /* ASCollectionData.m in Sources */,
 				058D0A27195D050800B7D73C /* _ASPendingState.mm in Sources */,
 				205F0E1A1B37339C007741D0 /* ASAbstractLayoutController.mm in Sources */,
 				ACF6ED1B1B17843500DA7C62 /* ASBackgroundLayoutSpec.mm in Sources */,

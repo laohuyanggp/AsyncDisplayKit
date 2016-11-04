@@ -21,6 +21,9 @@
 #import "ASSectionContext.h"
 #import "ASCollectionDataController.h"
 #import "ASCollectionView+Undeprecated.h"
+#import "ASDisplayNodeInternal.h"
+#import "NSArray+Diffing.h"
+#import "ASCollectionData.h"
 
 #pragma mark - _ASCollectionPendingState
 
@@ -92,6 +95,10 @@
 @interface ASCollectionNode ()
 {
   ASDN::RecursiveMutex _environmentStateLock;
+  NSMutableArray<void(^)(BOOL)> *_updateCompletionBlocks;
+  struct {
+    unsigned needsUpdate:1;
+  } _collectionNodeFlags;
 }
 @property (nonatomic) _ASCollectionPendingState *pendingState;
 @end
@@ -125,9 +132,9 @@
   };
 
   if (self = [super initWithViewBlock:collectionViewBlock]) {
-    return self;
+    _updateCompletionBlocks = [NSMutableArray array];
   }
-  return nil;
+  return self;
 }
 
 - (void)dealloc
@@ -447,6 +454,76 @@
 {
   ASDisplayNodeAssertMainThread();
   return [self.dataController contextForSection:section];
+}
+
+- (id<ASCollectionData>)createNewData
+{
+  // TODO: impl
+  return nil;
+}
+
+- (void)setNeedsUpdateWithCompletion:(void (^)(BOOL finished))completion
+{
+  ASDN::MutexLocker l(__instanceLock__);
+  if (completion != nil) {
+    [_updateCompletionBlocks addObject:completion];
+  }
+  // If we already needed an update, just return.
+  if (_collectionNodeFlags.needsUpdate) {
+    return;
+  }
+
+  _collectionNodeFlags.needsUpdate = YES;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self _performUpdate];
+  });
+}
+
+- (void)_performUpdate
+{
+  ASDN::MutexLocker l(__instanceLock__);
+  _collectionNodeFlags.needsUpdate = NO;
+  NSArray<void(^)(BOOL)> *completionBlocks = _updateCompletionBlocks;
+  _updateCompletionBlocks = [NSMutableArray array];
+  id<ASCollectionData> oldData = [self.dataSource dataForCollectionNode:self];
+  id<ASCollectionData> data = [self.dataSource dataForCollectionNode:self];
+  NSIndexSet *insertedSections = nil, *deletedSections = nil;
+  NSArray<NSIndexPath *> *insertedItems = nil, *deletedItems = nil;
+  [data.mutableSections asdk_nestedDiffWithArray:oldData.mutableSections
+                                insertedSections:&insertedSections
+                                 deletedSections:&deletedSections
+                                   insertedItems:&insertedItems
+                                    deletedItems:&deletedItems
+                                    nestingBlock:^NSArray *(id<ASCollectionSection> object) {
+    return object.mutableItems;
+  }];
+
+  // If the diff came up completely empty, just call completion handlers and return.
+  if (insertedSections.count == 0 && deletedSections.count == 0 && insertedItems.count == 0 && deletedItems.count == 0) {
+    for (void (^completionBlock)(BOOL finished) in completionBlocks) {
+      completionBlock(YES);
+    }
+    return;
+  }
+
+  [self performBatchUpdates:^{
+    if (insertedSections.count > 0) {
+      [self insertSections:insertedSections];
+    }
+    if (deletedSections.count > 0) {
+      [self deleteSections:deletedSections];
+    }
+    if (insertedItems.count > 0) {
+      [self insertItemsAtIndexPaths:insertedItems];
+    }
+    if (deletedItems.count > 0) {
+      [self deleteItemsAtIndexPaths:deletedItems];
+    }
+  } completion:^(BOOL finished) {
+    for (void (^completionBlock)(BOOL) in completionBlocks) {
+      completionBlock(finished);
+    }
+  }];
 }
 
 #pragma mark - Editing

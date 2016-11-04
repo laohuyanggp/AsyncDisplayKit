@@ -15,9 +15,7 @@
 #import <AsyncDisplayKit/ASRangeControllerUpdateRangeProtocol+Beta.h>
 #import <AsyncDisplayKit/ASCollectionView.h>
 
-@protocol ASCollectionViewLayoutFacilitatorProtocol;
-@protocol ASCollectionDelegate;
-@protocol ASCollectionDataSource;
+@protocol ASCollectionData,ASCollectionViewLayoutFacilitatorProtocol,ASCollectionDelegate,ASCollectionDataSource;
 @class ASCollectionView;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -412,6 +410,24 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable id<ASSectionContext>)contextForSection:(NSInteger)section AS_WARN_UNUSED_RESULT;
 
+/**
+ * Creates a new data object for this collection node.
+ *
+ * You call this method in your implementation of @c dataForCollectionNode:. 
+ * You should not store or reuse the returned object.
+ * You should not call this method outside of @c dataForCollectionNode: .
+ */
+- (id<ASCollectionData>)createNewData;
+
+/**
+ * Schedules the collection node to update its data.
+ *
+ * @param completion An optional block to be run when the update is completed.
+ * You may call this method from any thread of your application.
+ * The completion handler, if one is provided, will be called on the main thread.
+ */
+- (void)setNeedsUpdateWithCompletion:(nullable void (^)(BOOL finished))completion;
+
 @end
 
 @interface ASCollectionNode (Deprecated)
@@ -434,6 +450,17 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol ASCollectionDataSource <ASCommonCollectionDataSource>
 
 @optional
+
+/**
+ * Asks the data source to provide the new data.
+ *
+ * @param collectionNode The sender.
+ *
+ * The data source should call @c -createNewData , configure the data object
+ * and then return it. You should not store or reuse the data object.
+ * This method will be called on the main thread.
+ */
+- (id<ASCollectionData>)dataForCollectionNode:(ASCollectionNode *)collectionNode;
 
 /**
  * Asks the data source for the number of items in the given section of the collection node.

@@ -21,6 +21,7 @@
 #import "ASEqualityHelpers.h"
 #import "ASInternalHelpers.h"
 #import "ASDisplayNodeExtras.h"
+#import "ASDisplayNodeInternal.h"
 
 #if !AS_IOS8_SDK_OR_LATER
 #error ASMultiplexImageNode can be used on iOS 7, but must be linked against the iOS 8 SDK.
@@ -84,7 +85,6 @@ typedef void(^ASMultiplexImageLoadCompletionBlock)(UIImage *image, id imageIdent
   id _downloadIdentifier;
   
   // Properties
-  ASDN::RecursiveMutex __instanceLock__;
   BOOL _shouldRenderProgressImages;
   
   //set on init only

@@ -396,8 +396,9 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
     _asyncDataSourceFlags.collectionNodeNodeForSupplementaryElement = [_asyncDataSource respondsToSelector:@selector(collectionNode:nodeForSupplementaryElementOfKind:atIndexPath:)];
 
 
-    // If they implement the functional method, they should not implement the other ones.
+    // Make assertions about what they implement, unless they are suppressed.
     if (self.test_suppressCallbackImplementationAssertions == NO) {
+      // If they implement the functional method, they should not implement the other ones.
       if (_asyncDataSourceFlags.dataForCollectionNode) {
         ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionNode:)]);
         ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)]);
@@ -1272,6 +1273,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   if (_asyncDataSourceFlags.dataForCollectionNode) {
     return [_asyncDataSource dataForCollectionNode:self.collectionNode];
   } else {
+    ASDisplayNodeFailAssert(@"Data controller called %@ but our data source doesn't implement it.", NSStringFromSelector(_cmd));
     return nil;
   }
 }

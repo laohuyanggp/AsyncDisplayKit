@@ -114,9 +114,10 @@
     [data addSectionWithIdentifier:sectionID block:^(ASCollectionData * data) {
       for (NSString *item in _items[idx]) {
         [data addItemWithIdentifier:item
-                    constrainedSize:ASSizeRangeMake(CGSizeMake(50, 50))
                           nodeBlock:^{
-          return [[ASCellNode alloc] init];
+          ASTextCellNodeWithSetSelectedCounter *textCellNode = [[ASTextCellNodeWithSetSelectedCounter alloc] init];
+          textCellNode.text = item;
+          return textCellNode;
         }];
       }
     }];

@@ -14,9 +14,11 @@
 #import <AsyncDisplayKit/ASDisplayNode.h>
 #import <AsyncDisplayKit/ASRangeControllerUpdateRangeProtocol+Beta.h>
 #import <AsyncDisplayKit/ASCollectionView.h>
-#import "ASCollectionData.h"
 
-@protocol ASCollectionData,ASCollectionViewLayoutFacilitatorProtocol,ASCollectionDelegate,ASCollectionDataSource;
+@protocol ASCollectionViewLayoutFacilitatorProtocol;
+@protocol ASCollectionDelegate;
+@protocol ASCollectionDataSource;
+@protocol ASCollectionData;
 @class ASCollectionView;
 
 NS_ASSUME_NONNULL_BEGIN

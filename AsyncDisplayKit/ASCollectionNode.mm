@@ -95,10 +95,6 @@
 @interface ASCollectionNode ()
 {
   ASDN::RecursiveMutex _environmentStateLock;
-  NSMutableArray<void(^)(BOOL)> *_updateCompletionBlocks;
-  struct {
-    unsigned needsUpdate:1;
-  } _collectionNodeFlags;
 }
 @property (nonatomic) _ASCollectionPendingState *pendingState;
 @end
@@ -132,9 +128,9 @@
   };
 
   if (self = [super initWithViewBlock:collectionViewBlock]) {
-    _updateCompletionBlocks = [NSMutableArray array];
+    return self;
   }
-  return self;
+  return nil;
 }
 
 - (void)dealloc

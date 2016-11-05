@@ -15,7 +15,6 @@
 #import "ASAssert.h"
 #import "ASDataController+Subclasses.h"
 #import "NSArray+Diffing.h"
-#import "ASCollectionData.h"
 
 @implementation ASChangeSetDataController {
   NSInteger _changeSetBatchUpdateCounter;
@@ -74,7 +73,6 @@
     }
 
     [_changeSet markCompletedWithNewItemCounts:[self itemCountsFromDataSource]];
-
     
     [super beginUpdates];
     

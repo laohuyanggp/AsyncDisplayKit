@@ -48,8 +48,9 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
 /**
  * An object used to construct the data set for a collection
  * or table node. 
- * When the collection needs to update its data, it calls collectionNode:setDataWithContext:
- * on the data source, and provides one of these.
+ * When the collection needs to update its data, it calls @c dataForCollectionNode:
+ * on the data source. The data source calls @c createNewData on the collection node,
+ * configures the data object, and returns it.
  */
 @interface ASCollectionData : NSObject
 

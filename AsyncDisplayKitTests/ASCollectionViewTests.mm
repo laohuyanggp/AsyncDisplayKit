@@ -20,6 +20,7 @@
 #import <vector>
 #import <OCMock/OCMock.h>
 #import "ASCollectionView+Undeprecated.h"
+#import "ASCollectionInternal.h"
 
 @interface ASTextCellNodeWithSetSelectedCounter : ASTextCellNode
 
@@ -70,11 +71,17 @@
 
 - (id)initWithNumberOfSections:(NSInteger)numberOfSections numberOfItemsInSection:(NSInteger)numberOfItemsInSection {
   if (self = [super init]) {
-    _sections = [NSMutableArray arrayWithObjects:@"Section A", @"Section B", @"Section C", nil];
-    _items = [NSMutableArray arrayWithObjects:
-              [NSMutableArray arrayWithObjects:@"Item A", @"Item B", @"Item C", nil],
-              [NSMutableArray arrayWithObjects:@"Item D", @"Item E", @"Item F", nil],
-              [NSMutableArray arrayWithObjects:@"Item G", @"Item H", @"Item I", nil], nil];
+    _sections = [NSMutableArray array];
+    _items = [NSMutableArray array];
+
+    for (NSInteger i = 0; i < 20; i++) {
+      [_sections addObject:[NSUUID UUID].UUIDString];
+      NSMutableArray *items = [NSMutableArray array];
+      for (NSInteger i = 0; i < 10; i++) {
+        [items addObject:[NSUUID UUID].UUIDString];
+      }
+      [_items addObject:items];
+    }
     _sectionGeneration = 1;
   }
 
@@ -235,9 +242,6 @@
   
   id dataSource = [NSObject new];
   XCTAssertThrows((collectionView.asyncDataSource = dataSource));
-  
-  dataSource = [OCMockObject niceMockForProtocol:@protocol(ASCollectionDataSource)];
-  XCTAssertNoThrow((collectionView.asyncDataSource = dataSource));
 }
 
 - (void)testThatItSetsALayoutInspectorForFlowLayouts
@@ -612,6 +616,7 @@
   UICollectionViewLayout *layout = [[UICollectionViewFlowLayout alloc] init];
   ASCollectionNode *cn = [[ASCollectionNode alloc] initWithFrame:window.bounds collectionViewLayout:layout];
   ASCollectionView *cv = cn.view;
+  cv.test_suppressCallbackImplementationAssertions = YES;
 
 
   __unused NSMutableSet *keepaliveNodes = [NSMutableSet set];

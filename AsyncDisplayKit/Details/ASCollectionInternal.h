@@ -52,6 +52,14 @@ NS_ASSUME_NONNULL_BEGIN
 // hierarchy state and set the interaction delegate.
 - (void)didCreateNode:(ASCellNode *)node;
 
+/**
+ * Prevent this collection view from making assertions about what methods its delegate/data source implement.
+ *
+ * This isn't pretty, but unfortunately OCMock always responds to all selectors, so
+ * removing it will require pretty significant resources that aren't currently worth it.
+ */
+@property (nonatomic, assign) BOOL test_suppressCallbackImplementationAssertions;
+
 @end
 
 NS_ASSUME_NONNULL_END

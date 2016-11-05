@@ -26,6 +26,7 @@
 #import "ASCollectionViewLayoutFacilitatorProtocol.h"
 #import "ASSectionContext.h"
 #import "ASCollectionView+Undeprecated.h"
+#import "ASCollectionInternal.h"
 
 /// What, if any, invalidation should we perform during the next -layoutSubviews.
 typedef NS_ENUM(NSUInteger, ASCollectionViewInvalidationStyle) {
@@ -217,8 +218,6 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   } _layoutInspectorFlags;
 }
 
-@property (nonatomic, weak)   ASCollectionNode *collectionNode;
-
 @end
 
 @interface ASCollectionNode ()
@@ -398,21 +397,23 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 
 
     // If they implement the functional method, they should not implement the other ones.
-    if (_asyncDataSourceFlags.dataForCollectionNode) {
-      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionNode:)]);
-      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)]);
-      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:numberOfItemsInSection:)]);
-      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:numberOfItemsInSection:)]);
-      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeBlockForItemAtIndexPath:)]);
-      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeBlockForItemAtIndexPath:)]);
-      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeForItemAtIndexPath:)]);
-      ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeForItemAtIndexPath:)]);
-    } else {
-      ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNumberOfItemsInSection || _asyncDataSourceFlags.collectionViewNumberOfItemsInSection, @"Data source must implement collectionNode:numberOfItemsInSection:");
-      ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNodeBlockForItem
-                          || _asyncDataSourceFlags.collectionNodeNodeForItem
-                          || _asyncDataSourceFlags.collectionViewNodeBlockForItem
-                          || _asyncDataSourceFlags.collectionViewNodeForItem, @"Data source must implement collectionNode:nodeBlockForItemAtIndexPath: or collectionNode:nodeForItemAtIndexPath:");
+    if (self.test_suppressCallbackImplementationAssertions == NO) {
+      if (_asyncDataSourceFlags.dataForCollectionNode) {
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionNode:)]);
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)]);
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:numberOfItemsInSection:)]);
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:numberOfItemsInSection:)]);
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeBlockForItemAtIndexPath:)]);
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeBlockForItemAtIndexPath:)]);
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeForItemAtIndexPath:)]);
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeForItemAtIndexPath:)]);
+      } else {
+        ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNumberOfItemsInSection || _asyncDataSourceFlags.collectionViewNumberOfItemsInSection, @"Data source must implement collectionNode:numberOfItemsInSection:");
+        ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNodeBlockForItem
+                            || _asyncDataSourceFlags.collectionNodeNodeForItem
+                            || _asyncDataSourceFlags.collectionViewNodeBlockForItem
+                            || _asyncDataSourceFlags.collectionViewNodeForItem, @"Data source must implement collectionNode:nodeBlockForItemAtIndexPath: or collectionNode:nodeForItemAtIndexPath:");
+      }
     }
   }
   

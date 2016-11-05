@@ -21,9 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 // NOTE: This property is nilled out after it is read.
 @property (nonatomic, readonly, strong, nullable) ASCellNodeBlock nodeBlock;
 
-@property (nonatomic, assign) ASSizeRange constrainedSize;
 - (instancetype)initWithIdentifier:(ASItemIdentifier)identifier
-                   constrainedSize:(ASSizeRange)constrainedSize
                          nodeBlock:(ASCellNodeBlock)nodeBlock;
 @end
 

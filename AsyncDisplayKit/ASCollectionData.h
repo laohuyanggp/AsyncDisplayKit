@@ -69,14 +69,12 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
  * inside the block passed to @c addSectionWithIdentifier:
  *
  * @param identifier The identifier for the new item.
- * @param constrainedSize The constrained size to use when measuring the item.
  * @param nodeBlock A block that will be used to construct the node for the item.
  *
  * @warning It is an error to call this method with an identifier that is associated with another item.
  * @note If an item already exists with this identifier, the node block will be ignored.
  */
 - (void)addItemWithIdentifier:(ASItemIdentifier)identifier
-              constrainedSize:(ASSizeRange)constrainedSize
                     nodeBlock:(ASCellNodeBlock)nodeBlock;
 
 /**
@@ -91,7 +89,6 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
  * Note that if an item already exists with this identifier, the node block will be ignored.
  */
 - (id<ASCollectionItem>)itemWithIdentifier:(ASItemIdentifier)identifier
-                           constrainedSize:(ASSizeRange)constrainedSize
                                  nodeBlock:(ASCellNodeBlock)nodeBlock;
 
 /**

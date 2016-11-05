@@ -229,11 +229,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
 
 - (ASSizeRange)constrainedSizeForNodeOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
 {
-  if (self.supportsDeclarativeData) {
-    return [self.currentData itemAtIndexPath:indexPath].constrainedSize;
-  } else {
-    return [_dataSource dataController:self constrainedSizeForNodeAtIndexPath:indexPath];
-  }
+  return [_dataSource dataController:self constrainedSizeForNodeAtIndexPath:indexPath];
 }
 
 #pragma mark - External Data Querying + Editing

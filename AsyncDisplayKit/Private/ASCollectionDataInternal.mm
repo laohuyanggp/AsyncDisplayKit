@@ -20,15 +20,13 @@ std::vector<NSInteger> ASItemCountsFromData(ASCollectionData * data)
 
 @implementation ASCollectionItemImpl
 @synthesize identifier = _identifier;
-@synthesize constrainedSize = _constrainedSize;
 @synthesize nodeBlock = _nodeBlock;
 
-- (instancetype)initWithIdentifier:(ASItemIdentifier)identifier constrainedSize:(ASSizeRange)constrainedSize nodeBlock:(ASCellNodeBlock)nodeBlock
+- (instancetype)initWithIdentifier:(ASItemIdentifier)identifier nodeBlock:(ASCellNodeBlock)nodeBlock
 {
   self = [super init];
   if (self != nil) {
     _identifier = identifier;
-    _constrainedSize = constrainedSize;
     _nodeBlock = nodeBlock;
   }
   return self;
@@ -174,26 +172,26 @@ std::vector<NSInteger> ASItemCountsFromData(ASCollectionData * data)
   _currentSection = nil;
 }
 
-- (void)addItemWithIdentifier:(ASItemIdentifier)identifier constrainedSize:(ASSizeRange)constrainedSize nodeBlock:(ASCellNodeBlock)nodeBlock
+- (void)addItemWithIdentifier:(ASItemIdentifier)identifier nodeBlock:(ASCellNodeBlock)nodeBlock
 {
   if (_currentSection == nil) {
     ASDisplayNodeFailAssert(@"Call to %@ must be inside an addSection: block.", NSStringFromSelector(_cmd));
     return;
   }
 
-  id<ASCollectionItem> item = [self itemWithIdentifier:identifier constrainedSize:constrainedSize nodeBlock:nodeBlock];
+  id<ASCollectionItem> item = [self itemWithIdentifier:identifier nodeBlock:nodeBlock];
   [_currentSection.mutableItems addObject:item];
 }
 
 #pragma mark - Item / Section Access (Public)
 
-- (id<ASCollectionItem>)itemWithIdentifier:(ASItemIdentifier)identifier constrainedSize:(ASSizeRange)constrainedSize nodeBlock:(nonnull ASCellNodeBlock)nodeBlock
+- (id<ASCollectionItem>)itemWithIdentifier:(ASItemIdentifier)identifier nodeBlock:(nonnull ASCellNodeBlock)nodeBlock
 {
   ASCollectionItemImpl *item = _itemsDict[identifier];
   if (item == nil) {
 
     void (^postNodeBlock)(ASCellNode *) = _postNodeBlock;
-    item = [[ASCollectionItemImpl alloc] initWithIdentifier:identifier constrainedSize:constrainedSize nodeBlock:^{
+    item = [[ASCollectionItemImpl alloc] initWithIdentifier:identifier nodeBlock:^{
       ASCellNode *node = nodeBlock();
       if (postNodeBlock != nil) {
         postNodeBlock(node);

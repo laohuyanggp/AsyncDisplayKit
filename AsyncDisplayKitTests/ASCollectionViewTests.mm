@@ -873,7 +873,7 @@
   [del.sections insertObject:@"Section X" atIndex:1];
   [del.items insertObject:[NSMutableArray arrayWithObjects:@"Item X", @"Item Y", nil] atIndex:1];
   XCTestExpectation *updateCompletionExpectation = [self expectationWithDescription:@"Update did finish"];
-  [node setNeedsUpdateWithCompletion:^(BOOL finished) {
+  [node performBatchUpdates:nil completion:^(BOOL finished) {
     XCTAssertEqual([node.view numberOfSections], del.sections.count);
     [del.items enumerateObjectsUsingBlock:^(NSMutableArray<NSString *> * _Nonnull items, NSUInteger section, BOOL * _Nonnull stop) {
       XCTAssertEqual([node.view numberOfItemsInSection:section], items.count);

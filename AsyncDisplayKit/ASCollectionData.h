@@ -6,11 +6,20 @@
 //  Copyright © 2016 Facebook. All rights reserved.
 //
 
+#pragma once
 #import <Foundation/Foundation.h>
-#import <AsyncDisplayKit/ASCollectionNode.h>
+
+@class ASCellNode;
+
+NS_ASSUME_NONNULL_BEGIN
 
 typedef NSString * ASSectionIdentifier;
 typedef NSString * ASItemIdentifier;
+
+/**
+ * ASCellNode creation block. Used to lazily create the ASCellNode instance for an item.
+ */
+typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
 
 @protocol ASCollectionItem <NSObject>
 
@@ -94,3 +103,5 @@ typedef NSString * ASItemIdentifier;
 @property (nonatomic, strong, readonly) NSMutableArray<id<ASCollectionSection>> *mutableSections;
 
 @end
+
+NS_ASSUME_NONNULL_END

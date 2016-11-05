@@ -11,11 +11,15 @@
 #pragma once
 #import <vector>
 
+@protocol ASCollectionData;
 @class ASIndexedNodeContext;
 
 typedef void (^ASDataControllerCompletionBlock)(NSArray<ASCellNode *> *nodes, NSArray<NSIndexPath *> *indexPaths);
 
-@interface ASDataController (Subclasses)
+@interface ASDataController () {
+  @package
+  id<ASCollectionData> _previousData;
+}
 
 #pragma mark - Internal editing & completed store querying
 

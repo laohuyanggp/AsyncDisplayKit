@@ -14,6 +14,17 @@
 #import "_ASHierarchyChangeSet.h"
 #import "ASAssert.h"
 #import "ASDataController+Subclasses.h"
+#import "NSArray+Diffing.h"
+#import "ASCollectionData.h"
+
+std::vector<NSInteger> ASItemCountsFromData(id<ASCollectionData> data)
+{
+  std::vector<NSInteger> result;
+  for (id<ASCollectionSection> s in data.mutableSections) {
+    result.push_back(s.mutableItems.count);
+  }
+  return result;
+};
 
 @implementation ASChangeSetDataController {
   NSInteger _changeSetBatchUpdateCounter;
@@ -32,7 +43,8 @@
   ASDisplayNodeAssertMainThread();
   if (_changeSetBatchUpdateCounter <= 0) {
     _changeSetBatchUpdateCounter = 0;
-    _changeSet = [[_ASHierarchyChangeSet alloc] initWithOldData:[self itemCountsFromDataSource]];
+    std::vector<NSInteger> itemCounts = (self.supportsDeclarativeData ? ASItemCountsFromData(_previousData) : [self itemCountsFromDataSource]);
+    _changeSet = [[_ASHierarchyChangeSet alloc] initWithOldData:itemCounts];
   }
   _changeSetBatchUpdateCounter++;
 }
@@ -63,8 +75,14 @@
       return;
     }
 
-    [self invalidateDataSourceItemCounts];
-    [_changeSet markCompletedWithNewItemCounts:[self itemCountsFromDataSource]];
+    // If they do functional data sourcing, we ignored the imperative updates
+    // so now let's do the diff and compute the changeset ourselves.
+    if (self.supportsDeclarativeData) {
+      [self _applyFunctionalDataSourceUpdate];
+    } else {
+      [self invalidateDataSourceItemCounts];
+      [_changeSet markCompletedWithNewItemCounts:[self itemCountsFromDataSource]];
+    }
     
     [super beginUpdates];
     
@@ -88,6 +106,43 @@
     
     _changeSet = nil;
   }
+}
+
+/**
+ * Updates _changeSet by reading the new data and diffing from the old data.
+ */
+- (void)_applyFunctionalDataSourceUpdate
+{
+  ASDisplayNodeAssertNotNil(_changeSet, nil);
+
+  id<ASCollectionData> oldData = _previousData;
+  id<ASCollectionData> data = [self.dataSource dataForDataController:self];
+  NSIndexSet *insertedSections = nil, *deletedSections = nil;
+  NSArray<NSIndexPath *> *insertedItems = nil, *deletedItems = nil;
+  [data.mutableSections asdk_nestedDiffWithArray:oldData.mutableSections
+                                insertedSections:&insertedSections
+                                 deletedSections:&deletedSections
+                                   insertedItems:&insertedItems
+                                    deletedItems:&deletedItems
+                                    nestingBlock:^NSArray *(id<ASCollectionSection> object) {
+                                      return object.mutableItems;
+                                    }];
+
+  // Currently we assume automatic animation for all updates.
+  if (insertedSections.count > 0) {
+    [_changeSet insertSections:insertedSections animationOptions:UITableViewRowAnimationAutomatic];
+  }
+  if (deletedSections.count > 0) {
+    [_changeSet deleteSections:insertedSections animationOptions:UITableViewRowAnimationAutomatic];
+  }
+  if (insertedItems.count > 0) {
+    [_changeSet insertItems:insertedItems animationOptions:UITableViewRowAnimationAutomatic];
+  }
+  if (deletedItems.count > 0) {
+    [_changeSet deleteItems:deletedItems animationOptions:UITableViewRowAnimationAutomatic];
+  }
+  [_changeSet markCompletedWithNewItemCounts:ASItemCountsFromData(data)];
+  _previousData = data;
 }
 
 - (BOOL)batchUpdating
@@ -116,7 +171,9 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet insertSections:sections animationOptions:animationOptions];
+  if (self.supportsDeclarativeData == NO) {
+  	[_changeSet insertSections:sections animationOptions:animationOptions];
+  }
   [self endUpdates];
 }
 
@@ -124,7 +181,9 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet deleteSections:sections animationOptions:animationOptions];
+  if (self.supportsDeclarativeData == NO) {
+  	[_changeSet deleteSections:sections animationOptions:animationOptions];
+  }
   [self endUpdates];
 }
 
@@ -132,7 +191,9 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet reloadSections:sections animationOptions:animationOptions];
+  if (self.supportsDeclarativeData == NO) {
+  	[_changeSet reloadSections:sections animationOptions:animationOptions];
+  }
   [self endUpdates];
 }
 
@@ -140,8 +201,10 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet deleteSections:[NSIndexSet indexSetWithIndex:section] animationOptions:animationOptions];
-  [_changeSet insertSections:[NSIndexSet indexSetWithIndex:newSection] animationOptions:animationOptions];
+  if (self.supportsDeclarativeData == NO) {
+    [_changeSet deleteSections:[NSIndexSet indexSetWithIndex:section] animationOptions:animationOptions];
+    [_changeSet insertSections:[NSIndexSet indexSetWithIndex:newSection] animationOptions:animationOptions];
+  }
   [self endUpdates];
 }
 
@@ -151,7 +214,9 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet insertItems:indexPaths animationOptions:animationOptions];
+  if (self.supportsDeclarativeData == NO) {
+    [_changeSet insertItems:indexPaths animationOptions:animationOptions];
+  }
   [self endUpdates];
 }
 
@@ -159,7 +224,9 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet deleteItems:indexPaths animationOptions:animationOptions];
+  if (self.supportsDeclarativeData == NO) {
+    [_changeSet deleteItems:indexPaths animationOptions:animationOptions];
+  }
   [self endUpdates];
 }
 
@@ -167,7 +234,9 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet reloadItems:indexPaths animationOptions:animationOptions];
+  if (self.supportsDeclarativeData == NO) {
+    [_changeSet reloadItems:indexPaths animationOptions:animationOptions];
+  }
   [self endUpdates];
 }
 
@@ -175,8 +244,10 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet deleteItems:@[indexPath] animationOptions:animationOptions];
-  [_changeSet insertItems:@[newIndexPath] animationOptions:animationOptions];
+  if (self.supportsDeclarativeData == NO) {
+    [_changeSet deleteItems:@[indexPath] animationOptions:animationOptions];
+    [_changeSet insertItems:@[newIndexPath] animationOptions:animationOptions];
+  }
   [self endUpdates];
 }
 

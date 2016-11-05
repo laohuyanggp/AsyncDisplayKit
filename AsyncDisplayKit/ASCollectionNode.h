@@ -14,6 +14,7 @@
 #import <AsyncDisplayKit/ASDisplayNode.h>
 #import <AsyncDisplayKit/ASRangeControllerUpdateRangeProtocol+Beta.h>
 #import <AsyncDisplayKit/ASCollectionView.h>
+#import "ASCollectionData.h"
 
 @protocol ASCollectionData,ASCollectionViewLayoutFacilitatorProtocol,ASCollectionDelegate,ASCollectionDataSource;
 @class ASCollectionView;
@@ -418,15 +419,6 @@ NS_ASSUME_NONNULL_BEGIN
  * You should not call this method outside of @c dataForCollectionNode: .
  */
 - (id<ASCollectionData>)createNewData;
-
-/**
- * Schedules the collection node to update its data.
- *
- * @param completion An optional block to be run when the update is completed.
- * You may call this method from any thread of your application.
- * The completion handler, if one is provided, will be called on the main thread.
- */
-- (void)setNeedsUpdateWithCompletion:(nullable void (^)(BOOL finished))completion;
 
 @end
 

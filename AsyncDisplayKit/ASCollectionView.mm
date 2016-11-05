@@ -207,7 +207,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
     unsigned int numberOfSectionsInCollectionNode:1;
     unsigned int collectionNodeNumberOfItemsInSection:1;
     unsigned int collectionNodeContextForSection:1;
-    unsigned int updateDataForCollectionNode:1;
+    unsigned int dataForCollectionNode:1;
   } _asyncDataSourceFlags;
   
   struct {
@@ -382,7 +382,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
     _asyncDataSource = asyncDataSource;
     _proxyDataSource = [[ASCollectionViewProxy alloc] initWithTarget:_asyncDataSource interceptor:self];
     
-    _asyncDataSourceFlags.updateDataForCollectionNode = [_asyncDelegate respondsToSelector:@selector(dataForCollectionNode:)];
+    _asyncDataSourceFlags.dataForCollectionNode = [_asyncDelegate respondsToSelector:@selector(dataForCollectionNode:)];
     _asyncDataSourceFlags.collectionViewNodeForItem = [_asyncDataSource respondsToSelector:@selector(collectionView:nodeForItemAtIndexPath:)];
     _asyncDataSourceFlags.collectionViewNodeBlockForItem = [_asyncDataSource respondsToSelector:@selector(collectionView:nodeBlockForItemAtIndexPath:)];
     _asyncDataSourceFlags.numberOfSectionsInCollectionView = [_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)];
@@ -398,7 +398,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 
 
     // If they implement the functional method, they should not implement the other ones.
-    if (_asyncDataSourceFlags.updateDataForCollectionNode) {
+    if (_asyncDataSourceFlags.dataForCollectionNode) {
       ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionNode:)]);
       ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)]);
       ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:numberOfItemsInSection:)]);
@@ -423,6 +423,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   if (_layoutInspectorFlags.didChangeCollectionViewDataSource) {
     [layoutInspector didChangeCollectionViewDataSource:asyncDataSource];
   }
+  _dataController.supportsDeclarativeData = _asyncDataSourceFlags.dataForCollectionNode;
 }
 
 - (void)setAsyncDelegate:(id<ASCollectionDelegate>)asyncDelegate
@@ -1259,7 +1260,18 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 }
 
 
+// We will move these methods into ASCollectionNode
+// when the initializer for ASCollectionView is made unavailable (currently deprecated.)
 #pragma mark - ASDataControllerSource
+
+- (id<ASCollectionData>)dataForDataController:(ASDataController *)dataController
+{
+  if (_asyncDataSourceFlags.dataForCollectionNode) {
+    return [_asyncDataSource dataForCollectionNode:self.collectionNode];
+  } else {
+    return nil;
+  }
+}
 
 - (ASCellNodeBlock)dataController:(ASDataController *)dataController nodeBlockAtIndexPath:(NSIndexPath *)indexPath {
   ASCellNodeBlock block = nil;

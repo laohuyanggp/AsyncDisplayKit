@@ -35,20 +35,23 @@
 {
   NSAssert(comparison != nil, @"Comparison block is required");
   NSIndexSet *commonIndexes = [self _asdk_commonIndexesWithArray:array compareBlock:comparison];
+  NSUInteger selfCount = self.count;
+  NSUInteger arrayCount = array.count;
+  NSUInteger commonCount = commonIndexes.count;
 
   if (commons) {
     *commons = commonIndexes;
   }
 
-  if (commonIndexes.count == self.count) {
+  if (selfCount == arrayCount && commonCount == selfCount) {
     return;
   }
 
   if (insertions) {
     NSArray *commonObjects = [self objectsAtIndexes:commonIndexes];
     NSMutableIndexSet *insertionIndexes = [NSMutableIndexSet indexSet];
-    for (NSInteger i = 0, j = 0; i < commonObjects.count || j < array.count;) {
-      if (i < commonObjects.count && j < array.count && comparison(commonObjects[i], array[j])) {
+    for (NSInteger i = 0, j = 0; i < commonCount || j < arrayCount;) {
+      if (i < commonCount && j < arrayCount && comparison(commonObjects[i], array[j])) {
         i++; j++;
       } else {
         [insertionIndexes addIndex:j];

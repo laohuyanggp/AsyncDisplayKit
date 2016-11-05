@@ -16,10 +16,7 @@
 
 typedef void (^ASDataControllerCompletionBlock)(NSArray<ASCellNode *> *nodes, NSArray<NSIndexPath *> *indexPaths);
 
-@interface ASDataController () {
-  @package
-  id<ASCollectionData> _previousData;
-}
+@interface ASDataController (Subclasses)
 
 #pragma mark - Internal editing & completed store querying
 
@@ -43,7 +40,7 @@ typedef void (^ASDataControllerCompletionBlock)(NSArray<ASCellNode *> *nodes, NS
  *
  * This must be called on the main thread.
  */
-- (void)invalidateDataSourceItemCounts;
+- (void)invalidateDataSourceData;
 
 /**
  * Returns the most recently gathered item counts from the data source. If the counts

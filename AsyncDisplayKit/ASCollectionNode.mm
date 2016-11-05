@@ -23,7 +23,7 @@
 #import "ASCollectionView+Undeprecated.h"
 #import "ASDisplayNodeInternal.h"
 #import "NSArray+Diffing.h"
-#import "ASCollectionData.h"
+#import "ASCollectionDataInternal.h"
 
 #pragma mark - _ASCollectionPendingState
 
@@ -456,10 +456,14 @@
   return [self.dataController contextForSection:section];
 }
 
-- (id<ASCollectionData>)createNewData
+- (ASCollectionData *)createNewData
 {
-  // TODO: impl
-  return nil;
+  ASCollectionData *data = [[ASCollectionData alloc] initWithReusableContentFromCompletedData:self.dataController.previousData];
+  __weak __typeof(self) weakSelf = self;
+  data.postNodeBlock = ^(ASCellNode *node) {
+    [weakSelf.view didCreateNode:node];
+  };
+  return data;
 }
 
 #pragma mark - Editing

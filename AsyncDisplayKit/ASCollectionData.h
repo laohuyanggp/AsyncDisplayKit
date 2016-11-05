@@ -8,6 +8,7 @@
 
 #pragma once
 #import <Foundation/Foundation.h>
+#import <AsyncDisplayKit/ASDimension.h>
 
 @class ASCellNode;
 
@@ -50,7 +51,7 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
  * When the collection needs to update its data, it calls collectionNode:setDataWithContext:
  * on the data source, and provides one of these.
  */
-@protocol ASCollectionData <NSObject>
+@interface ASCollectionData : NSObject
 
 /**
  * Appends a section to the collection.
@@ -60,19 +61,23 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
  *
  * @warning It is an error to call this method with an identifier that is associated with another section.
  */
-- (void)addSectionWithIdentifier:(ASSectionIdentifier)identifier block:(__attribute((noescape)) void(^)(id<ASCollectionData> data))block;
+- (void)addSectionWithIdentifier:(ASSectionIdentifier)identifier
+                           block:(__attribute((noescape)) void(^)(ASCollectionData * data))block;
 
 /**
  * Adds an item to the current section. This method must be called
  * inside the block passed to @c addSectionWithIdentifier:
  *
  * @param identifier The identifier for the new item.
+ * @param constrainedSize The constrained size to use when measuring the item.
  * @param nodeBlock A block that will be used to construct the node for the item.
  *
  * @warning It is an error to call this method with an identifier that is associated with another item.
  * @note If an item already exists with this identifier, the node block will be ignored.
  */
-- (void)addItemWithIdentifier:(ASItemIdentifier)identifier nodeBlock:(ASCellNodeBlock)nodeBlock;
+- (void)addItemWithIdentifier:(ASItemIdentifier)identifier
+              constrainedSize:(ASSizeRange)constrainedSize
+                    nodeBlock:(ASCellNodeBlock)nodeBlock;
 
 /**
  * Finds or creates an item with the given identifier.
@@ -85,7 +90,9 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
  *
  * Note that if an item already exists with this identifier, the node block will be ignored.
  */
-- (id<ASCollectionItem>)itemWithIdentifier:(ASItemIdentifier)identifier nodeBlock:(ASCellNodeBlock)nodeBlock;
+- (id<ASCollectionItem>)itemWithIdentifier:(ASItemIdentifier)identifier
+                           constrainedSize:(ASSizeRange)constrainedSize
+                                 nodeBlock:(ASCellNodeBlock)nodeBlock;
 
 /**
  * Finds or creates a section with the given identifier.

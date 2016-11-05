@@ -17,15 +17,6 @@
 #import "NSArray+Diffing.h"
 #import "ASCollectionData.h"
 
-std::vector<NSInteger> ASItemCountsFromData(id<ASCollectionData> data)
-{
-  std::vector<NSInteger> result;
-  for (id<ASCollectionSection> s in data.mutableSections) {
-    result.push_back(s.mutableItems.count);
-  }
-  return result;
-};
-
 @implementation ASChangeSetDataController {
   NSInteger _changeSetBatchUpdateCounter;
   _ASHierarchyChangeSet *_changeSet;
@@ -43,8 +34,7 @@ std::vector<NSInteger> ASItemCountsFromData(id<ASCollectionData> data)
   ASDisplayNodeAssertMainThread();
   if (_changeSetBatchUpdateCounter <= 0) {
     _changeSetBatchUpdateCounter = 0;
-    std::vector<NSInteger> itemCounts = (self.supportsDeclarativeData ? ASItemCountsFromData(_previousData) : [self itemCountsFromDataSource]);
-    _changeSet = [[_ASHierarchyChangeSet alloc] initWithOldData:itemCounts];
+    _changeSet = [[_ASHierarchyChangeSet alloc] initWithOldData:[self itemCountsFromDataSource]];
   }
   _changeSetBatchUpdateCounter++;
 }
@@ -80,9 +70,11 @@ std::vector<NSInteger> ASItemCountsFromData(id<ASCollectionData> data)
     if (self.supportsDeclarativeData) {
       [self _applyFunctionalDataSourceUpdate];
     } else {
-      [self invalidateDataSourceItemCounts];
-      [_changeSet markCompletedWithNewItemCounts:[self itemCountsFromDataSource]];
+      [self invalidateDataSourceData];
     }
+
+    [_changeSet markCompletedWithNewItemCounts:[self itemCountsFromDataSource]];
+
     
     [super beginUpdates];
     
@@ -115,11 +107,12 @@ std::vector<NSInteger> ASItemCountsFromData(id<ASCollectionData> data)
 {
   ASDisplayNodeAssertNotNil(_changeSet, nil);
 
-  id<ASCollectionData> oldData = _previousData;
-  id<ASCollectionData> data = [self.dataSource dataForDataController:self];
+  ASCollectionData * oldData = self.currentData;
+  [self invalidateDataSourceData];
+  ASCollectionData * data = self.currentData;
   NSIndexSet *insertedSections = nil, *deletedSections = nil;
   NSArray<NSIndexPath *> *insertedItems = nil, *deletedItems = nil;
-  [data.mutableSections asdk_nestedDiffWithArray:oldData.mutableSections
+  [oldData.mutableSections asdk_nestedDiffWithArray:data.mutableSections
                                 insertedSections:&insertedSections
                                  deletedSections:&deletedSections
                                    insertedItems:&insertedItems
@@ -133,7 +126,7 @@ std::vector<NSInteger> ASItemCountsFromData(id<ASCollectionData> data)
     [_changeSet insertSections:insertedSections animationOptions:UITableViewRowAnimationAutomatic];
   }
   if (deletedSections.count > 0) {
-    [_changeSet deleteSections:insertedSections animationOptions:UITableViewRowAnimationAutomatic];
+    [_changeSet deleteSections:deletedSections animationOptions:UITableViewRowAnimationAutomatic];
   }
   if (insertedItems.count > 0) {
     [_changeSet insertItems:insertedItems animationOptions:UITableViewRowAnimationAutomatic];
@@ -141,8 +134,6 @@ std::vector<NSInteger> ASItemCountsFromData(id<ASCollectionData> data)
   if (deletedItems.count > 0) {
     [_changeSet deleteItems:deletedItems animationOptions:UITableViewRowAnimationAutomatic];
   }
-  [_changeSet markCompletedWithNewItemCounts:ASItemCountsFromData(data)];
-  _previousData = data;
 }
 
 - (BOOL)batchUpdating

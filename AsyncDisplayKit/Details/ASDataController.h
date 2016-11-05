@@ -58,7 +58,7 @@ FOUNDATION_EXPORT NSString * const ASDataControllerRowNodeKind;
 /**
  * Fetch the new data set. This is called in endUpdates.
  */
-- (id<ASCollectionData>)dataForDataController:(ASDataController *)dataController;
+- (ASCollectionData *)dataForDataController:(ASDataController *)dataController;
 
 @end
 
@@ -113,6 +113,29 @@ FOUNDATION_EXPORT NSString * const ASDataControllerRowNodeKind;
 @interface ASDataController : ASDealloc2MainObject <ASFlowLayoutControllerDataSource>
 
 - (instancetype)initWithDataSource:(id<ASDataControllerSource>)dataSource NS_DESIGNATED_INITIALIZER;
+
+/**
+ * Whether or not our upstream data source supports dataForCollectionNode:. 
+ * If YES, then we read the new data and perform a diff after each update.
+ * Otherwise we rely on them calling insertItemsAtIndexPaths: etc.
+ */
+@property (assign) BOOL supportsDeclarativeData;
+
+/**
+ * The valid ASCollectionData most recently fetched from the data source, if functional data
+ * updating is active.
+ * 
+ * If the data has been invalidated, this property will request new data from the data source before returning.
+ */
+@property (nonatomic, readonly, strong, nullable) ASCollectionData * currentData;
+
+/**
+ * The ASCollectionData most recently fetched from the data source, if functional data
+ * updating is active.
+ *
+ * This method will return a data, even if it has been invalidated.
+ */
+@property (nonatomic, readonly, strong, nullable) ASCollectionData * previousData;
 
 /**
  Data source for fetching data info.

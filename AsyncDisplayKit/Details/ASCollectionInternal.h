@@ -48,6 +48,10 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable NSArray<NSIndexPath *> *)convertIndexPathsToCollectionNode:(nullable NSArray<NSIndexPath *> *)indexPaths;
 
+// Called after running each node block, to update the
+// hierarchy state and set the interaction delegate.
+- (void)didCreateNode:(ASCellNode *)node;
+
 @end
 
 NS_ASSUME_NONNULL_END

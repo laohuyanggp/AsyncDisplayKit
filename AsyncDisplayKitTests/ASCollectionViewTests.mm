@@ -98,14 +98,17 @@
   }
 }
 
-- (id<ASCollectionData>)dataForCollectionNode:(ASCollectionNode *)collectionNode
+- (ASCollectionData *)dataForCollectionNode:(ASCollectionNode *)collectionNode
 {
   ASDisplayNodeAssert(_useFunctionalStyle, nil);
-  id<ASCollectionData> data = [collectionNode createNewData];
+  ASCollectionData * data = [collectionNode createNewData];
+  ASDisplayNodeAssert(data.mutableSections.count == 0, @"Should get a fresh data each time!");
   [_sections enumerateObjectsUsingBlock:^(NSString *sectionID, NSUInteger idx, BOOL * _Nonnull stop) {
-    [data addSectionWithIdentifier:sectionID block:^(id<ASCollectionData> data) {
+    [data addSectionWithIdentifier:sectionID block:^(ASCollectionData * data) {
       for (NSString *item in _items[idx]) {
-        [data addItemWithIdentifier:item nodeBlock:^{
+        [data addItemWithIdentifier:item
+                    constrainedSize:ASSizeRangeMake(CGSizeMake(50, 50))
+                          nodeBlock:^{
           return [[ASCellNode alloc] init];
         }];
       }
@@ -185,11 +188,18 @@
 
 @implementation ASCollectionViewTestController
 
-- (instancetype)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
-  self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+- (instancetype)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+  return [self initWithFunctionalStyle:NO];
+}
+
+- (instancetype)initWithFunctionalStyle:(BOOL)useFunctionalStyle
+{
+  self = [super initWithNibName:nil bundle:nil];
   if (self) {
     // Populate these immediately so that they're not unexpectedly nil during tests.
     self.asyncDelegate = [[ASCollectionViewTestDelegate alloc] initWithNumberOfSections:10 numberOfItemsInSection:10];
+    self.asyncDelegate.useFunctionalStyle = useFunctionalStyle;
     id realLayout = [UICollectionViewFlowLayout new];
     id mockLayout = [OCMockObject partialMockForObject:realLayout];
     self.collectionNode = [[ASCollectionNode alloc] initWithFrame:self.view.bounds collectionViewLayout:mockLayout];
@@ -279,7 +289,7 @@
   reset();
   NSIndexPath *indexPath = [NSIndexPath indexPathForItem:0 inSection:0];
   ASTextCellNodeWithSetSelectedCounter *node = (ASTextCellNodeWithSetSelectedCounter*)[cn nodeForItemAtIndexPath:indexPath];
-  XCTAssertTrue([node.text isEqualToString:indexPath.description], @"Node's text should match the initial text it was created with");
+  XCTAssertEqualObjects(node.text, indexPath.description, @"Node's text should match the initial text it was created with");
 }
 
 - (void)testSelection
@@ -850,9 +860,8 @@
 
 - (void)testFunctionalDataLoad
 {
-  ASCollectionViewTestController *ctrl = [[ASCollectionViewTestController alloc] init];
+  ASCollectionViewTestController *ctrl = [[ASCollectionViewTestController alloc] initWithFunctionalStyle:YES];
   ASCollectionViewTestDelegate *del = ctrl.asyncDelegate;
-  del.useFunctionalStyle = YES;
 
   XCTAssertEqual(del.sections.count, ctrl.collectionNode.numberOfSections);
   [del.items enumerateObjectsUsingBlock:^(NSMutableArray<NSString *> * itemArray, NSUInteger section, BOOL * _Nonnull stop) {
@@ -862,14 +871,14 @@
 
 - (void)testFunctionalDataUpdate
 {
-  ASCollectionViewTestController *ctrl = [[ASCollectionViewTestController alloc] init];
+  ASCollectionViewTestController *ctrl = [[ASCollectionViewTestController alloc] initWithFunctionalStyle:YES];
   ASCollectionViewTestDelegate *del = ctrl.asyncDelegate;
-  del.useFunctionalStyle = YES;
 
   // Weak so that compiler won't whine about retain cycle.
   __weak ASCollectionNode *node = ctrl.collectionNode;
   [ctrl.view layoutIfNeeded];
   [node waitUntilAllUpdatesAreCommitted];
+  // Insert section at index 1
   [del.sections insertObject:@"Section X" atIndex:1];
   [del.items insertObject:[NSMutableArray arrayWithObjects:@"Item X", @"Item Y", nil] atIndex:1];
   XCTestExpectation *updateCompletionExpectation = [self expectationWithDescription:@"Update did finish"];

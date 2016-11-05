@@ -23,5 +23,4 @@
  * @see _ASHierarchyChangeSet
  */
 @interface ASChangeSetDataController : ASDataController
-@property (assign) BOOL supportsDeclarativeData;
 @end

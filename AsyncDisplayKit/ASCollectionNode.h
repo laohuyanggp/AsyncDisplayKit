@@ -418,7 +418,7 @@ NS_ASSUME_NONNULL_BEGIN
  * You should not store or reuse the returned object.
  * You should not call this method outside of @c dataForCollectionNode: .
  */
-- (id<ASCollectionData>)createNewData;
+- (ASCollectionData *)createNewData;
 
 @end
 
@@ -452,7 +452,7 @@ NS_ASSUME_NONNULL_BEGIN
  * and then return it. You should not store or reuse the data object.
  * This method will be called on the main thread.
  */
-- (id<ASCollectionData>)dataForCollectionNode:(ASCollectionNode *)collectionNode;
+- (ASCollectionData *)dataForCollectionNode:(ASCollectionNode *)collectionNode;
 
 /**
  * Asks the data source for the number of items in the given section of the collection node.

@@ -21,9 +21,11 @@
 /**
  * If a comparison block exists, calls that.
  * Otherwise, checks if the precomputed hashes are equal.
- * If they are equal, calls @c isEqual: on the two objects
+ * If they are equal, uses @c ASObjectIsEqual
  */
 #define FAST_EQUAL(selfIndex, otherIndex) (comparison ? comparison(self[selfIndex], array[otherIndex]) : (selfHashes[selfIndex] == arrayHashes[otherIndex] && ASObjectIsEqual(self[selfIndex], array[otherIndex])))
+
+#define FAST_EQUAL_NOHASH(array, index, otherArray, otherIndex) (comparison ? comparison(array[index], otherArray[otherIndex]) : ASObjectIsEqual(array[index], otherArray[otherIndex]))
 
 @implementation NSArray (Diffing)
 
@@ -60,7 +62,7 @@
     }
   }
 
-  NSIndexSet *commonIndexes = [self _asdk_commonIndexesWithArray:array compareBlock:comparison selfHashes:selfHashes arrayHashes:arrayHashes];
+  NSIndexSet *commonIndexes = [self _asdk_commonIndexesWithArray:array selfHashes:selfHashes arrayHashes:arrayHashes compareBlock:comparison];
   NSUInteger commonCount = commonIndexes.count;
 
   if (commons) {
@@ -75,7 +77,7 @@
     NSArray *commonObjects = [self objectsAtIndexes:commonIndexes];
     NSMutableIndexSet *insertionIndexes = [NSMutableIndexSet indexSet];
     for (NSInteger i = 0, j = 0; i < commonCount || j < arrayCount;) {
-      if (i < commonCount && j < arrayCount && FAST_EQUAL(i, j)) {
+      if (i < commonCount && j < arrayCount && FAST_EQUAL_NOHASH(commonObjects, i, array, j)) {
         i++; j++;
       } else {
         [insertionIndexes addIndex:j];
@@ -92,7 +94,7 @@
   }
 }
 
-- (NSIndexSet *)_asdk_commonIndexesWithArray:(NSArray *)array compareBlock:(BOOL (^)(id lhs, id rhs))comparison selfHashes:(NSUInteger *)selfHashes arrayHashes:(NSUInteger *)arrayHashes
+- (NSIndexSet *)_asdk_commonIndexesWithArray:(NSArray *)array selfHashes:(NSUInteger *)selfHashes arrayHashes:(NSUInteger *)arrayHashes compareBlock:(BOOL (^)(id lhs, id rhs))comparison
 {
   NSInteger selfCount = self.count;
   NSInteger arrayCount = array.count;

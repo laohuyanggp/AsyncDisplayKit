@@ -17,13 +17,18 @@
 // This is required to get +indexPathForItem:inSection: which uses tagged pointers for performance.
 #import <UIKit/UICollectionView.h>
 
+/**
+ * If a comparison block exists, calls that.
+ * Otherwise, checks if the precomputed hashes are equal.
+ * If they are equal, calls @c isEqual: on the two objects
+ */
+#define FAST_EQUAL(selfIndex, otherIndex) (comparison ? comparison(self[selfIndex], array[otherIndex]) : (selfHashes[selfIndex] == arrayHashes[otherIndex] && [self[selfIndex] isEqual:array[otherIndex]]))
+
 @implementation NSArray (Diffing)
 
 - (void)asdk_diffWithArray:(NSArray *)array insertions:(NSIndexSet **)insertions deletions:(NSIndexSet **)deletions
 {
-  [self asdk_diffWithArray:array insertions:insertions deletions:deletions compareBlock:^BOOL(id lhs, id rhs) {
-    return [lhs isEqual:rhs];
-  }];
+  [self asdk_diffWithArray:array insertions:insertions deletions:deletions compareBlock:nil];
 }
 
 - (void)asdk_diffWithArray:(NSArray *)array insertions:(NSIndexSet **)insertions deletions:(NSIndexSet **)deletions compareBlock:(BOOL (^)(id lhs, id rhs))comparison
@@ -33,10 +38,28 @@
 
 - (void)asdk_diffWithArray:(NSArray *)array insertions:(NSIndexSet **)insertions deletions:(NSIndexSet **)deletions commons:(NSIndexSet **)commons compareBlock:(BOOL (^)(id lhs, id rhs))comparison
 {
-  NSAssert(comparison != nil, @"Comparison block is required");
-  NSIndexSet *commonIndexes = [self _asdk_commonIndexesWithArray:array compareBlock:comparison];
   NSUInteger selfCount = self.count;
   NSUInteger arrayCount = array.count;
+
+  // If they didn't provide a comparison block, we are going to use isEqual:
+  // We precompute the hashes of all our elements because for non-trivial
+  // counts, even extremely fast isEqual: implementations will be far too slow.
+  NSUInteger selfHashes[selfCount];
+  NSUInteger arrayHashes[arrayCount];
+  if (comparison == nil) {
+    NSUInteger i = 0;
+    for (id object in self) {
+      selfHashes[i] = [object hash];
+      i += 1;
+    }
+    i = 0;
+    for (id object in array) {
+      arrayHashes[i] = [object hash];
+      i += 1;
+    }
+  }
+
+  NSIndexSet *commonIndexes = [self _asdk_commonIndexesWithArray:array compareBlock:comparison selfHashes:selfHashes arrayHashes:arrayHashes];
   NSUInteger commonCount = commonIndexes.count;
 
   if (commons) {
@@ -51,7 +74,7 @@
     NSArray *commonObjects = [self objectsAtIndexes:commonIndexes];
     NSMutableIndexSet *insertionIndexes = [NSMutableIndexSet indexSet];
     for (NSInteger i = 0, j = 0; i < commonCount || j < arrayCount;) {
-      if (i < commonCount && j < arrayCount && comparison(commonObjects[i], array[j])) {
+      if (i < commonCount && j < arrayCount && FAST_EQUAL(i, j)) {
         i++; j++;
       } else {
         [insertionIndexes addIndex:j];
@@ -68,10 +91,8 @@
   }
 }
 
-- (NSIndexSet *)_asdk_commonIndexesWithArray:(NSArray *)array compareBlock:(BOOL (^)(id lhs, id rhs))comparison
+- (NSIndexSet *)_asdk_commonIndexesWithArray:(NSArray *)array compareBlock:(BOOL (^)(id lhs, id rhs))comparison selfHashes:(NSUInteger *)selfHashes arrayHashes:(NSUInteger *)arrayHashes
 {
-  NSAssert(comparison != nil, @"Comparison block is required");
-  
   NSInteger selfCount = self.count;
   NSInteger arrayCount = array.count;
   
@@ -88,11 +109,10 @@
   }
   
   for (NSInteger i = 0; i <= selfCount; i++) {
-    id selfObj = i > 0 ? self[i-1] : nil;
     for (NSInteger j = 0; j <= arrayCount; j++) {
       if (i == 0 || j == 0) {
         lengths[i][j] = 0;
-      } else if (comparison(selfObj, array[j-1])) {
+      } else if (FAST_EQUAL(i-1, j-1)) {
         lengths[i][j] = 1 + lengths[i-1][j-1];
       } else {
         lengths[i][j] = MAX(lengths[i-1][j], lengths[i][j-1]);
@@ -103,7 +123,7 @@
   NSMutableIndexSet *common = [NSMutableIndexSet indexSet];
   NSInteger i = selfCount, j = arrayCount;
   while(i > 0 && j > 0) {
-    if (comparison(self[i-1], array[j-1])) {
+    if (FAST_EQUAL(i-1, j-1)) {
       [common addIndex:(i-1)];
       i--; j--;
     } else if (lengths[i-1][j] > lengths[i][j-1]) {

@@ -26,7 +26,10 @@
  * @abstract Compares two arrays, providing the insertion and deletion indexes needed to transform into the target array.
  * @discussion The `compareBlock` is used to identify the equality of the objects within the arrays.
  * This diffing algorithm uses a bottom-up memoized longest common subsequence solution to identify differences.
- * It runs in O(mn) complexity.
+ * It runs in O(mn) complexity. If no compare block is provided, the isEqual: method is used.
+ *
+ * @warning Providing a comparison block makes this operation tremendously slower. For any array that isn't extremely small,
+ *   consider creating new arrays using @c valueForKey: and performing the diff on those with the default comparison.
  */
 - (void)asdk_diffWithArray:(NSArray *)array insertions:(NSIndexSet **)insertions deletions:(NSIndexSet **)deletions compareBlock:(BOOL (^)(id lhs, id rhs))comparison;
 

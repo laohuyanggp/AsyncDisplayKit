@@ -9,6 +9,8 @@
 #import "ASCollectionDataInternal.h"
 #import "ASDimension.h"
 
+static ASSectionIdentifier const ASDefaultSectionIdentifier = @"ASDefaultSectionIdentifier";
+
 std::vector<NSInteger> ASItemCountsFromData(ASCollectionData * data)
 {
   std::vector<NSInteger> result;
@@ -174,13 +176,13 @@ std::vector<NSInteger> ASItemCountsFromData(ASCollectionData * data)
 
 - (void)addItemWithIdentifier:(ASItemIdentifier)identifier nodeBlock:(ASCellNodeBlock)nodeBlock
 {
-  if (_currentSection == nil) {
-    ASDisplayNodeFailAssert(@"Call to %@ must be inside an addSection: block.", NSStringFromSelector(_cmd));
-    return;
+  id<ASCollectionSection> section = _currentSection;
+  if (section == nil) {
+    section = [self _sectionWithIdentifier:identifier appendingIfCreated:YES];
   }
 
   id<ASCollectionItem> item = [self itemWithIdentifier:identifier nodeBlock:nodeBlock];
-  [_currentSection.mutableItems addObject:item];
+  [section.mutableItems addObject:item];
 }
 
 #pragma mark - Item / Section Access (Public)
@@ -189,7 +191,6 @@ std::vector<NSInteger> ASItemCountsFromData(ASCollectionData * data)
 {
   ASCollectionItemImpl *item = _itemsDict[identifier];
   if (item == nil) {
-
     void (^postNodeBlock)(ASCellNode *) = _postNodeBlock;
     item = [[ASCollectionItemImpl alloc] initWithIdentifier:identifier nodeBlock:^{
       ASCellNode *node = nodeBlock();
@@ -206,13 +207,8 @@ std::vector<NSInteger> ASItemCountsFromData(ASCollectionData * data)
 
 - (id<ASCollectionSection>)sectionWithIdentifier:(ASSectionIdentifier)identifier
 {
-  ASCollectionSectionImpl *section = _sectionsDict[identifier];
-  if (section == nil) {
-    section = [[ASCollectionSectionImpl alloc] initWithIdentifier:identifier];
-  }
   ASDisplayNodeAssertNil(_usedSections[identifier], @"Attempt to use the same section twice. Identifier: %@", identifier);
-  _usedSections[identifier] = section;
-  return section;
+  return [self _sectionWithIdentifier:identifier appendingIfCreated:NO];
 }
 
 #pragma mark - Framework Accessors
@@ -251,6 +247,21 @@ std::vector<NSInteger> ASItemCountsFromData(ASCollectionData * data)
   NSMutableArray *array = [NSMutableArray array];
   [array addObject:@{ @"sections" : _mutableSections }];
   return array;
+}
+
+#pragma mark - Private
+
+- (ASCollectionSectionImpl *)_sectionWithIdentifier:(ASSectionIdentifier)identifier appendingIfCreated:(BOOL)append
+{
+  ASCollectionSectionImpl *section = _sectionsDict[identifier];
+  if (section == nil) {
+    section = [[ASCollectionSectionImpl alloc] initWithIdentifier:identifier];
+    if (append) {
+      [self.mutableSections addObject:section];
+    }
+  }
+  _usedSections[identifier] = section;
+  return section;
 }
 
 @end

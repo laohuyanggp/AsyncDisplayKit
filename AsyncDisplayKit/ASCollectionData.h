@@ -66,13 +66,12 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
                            block:(__attribute((noescape)) void(^)(ASCollectionData * data))block;
 
 /**
- * Adds an item to the current section. This method must be called
- * inside the block passed to @c addSectionWithIdentifier:
+ * Adds an item to the current section. If this method is called outside of an addSectionWithIdentifier:
+ * block, a default section will be created and used.
  *
  * @param identifier The identifier for the new item.
  * @param nodeBlock A block that will be used to construct the node for the item.
  *
- * @warning It is an error to call this method with an identifier that is associated with another item.
  * @note If an item already exists with this identifier, the node block will be ignored.
  */
 - (void)addItemWithIdentifier:(ASItemIdentifier)identifier

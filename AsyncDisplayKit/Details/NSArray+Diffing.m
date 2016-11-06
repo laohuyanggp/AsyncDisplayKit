@@ -13,6 +13,7 @@
 #import "NSArray+Diffing.h"
 #import "ASAssert.h"
 #import "NSIndexSet+ASHelpers.h"
+#import "ASEqualityHelpers.h"
 
 // This is required to get +indexPathForItem:inSection: which uses tagged pointers for performance.
 #import <UIKit/UICollectionView.h>
@@ -22,7 +23,7 @@
  * Otherwise, checks if the precomputed hashes are equal.
  * If they are equal, calls @c isEqual: on the two objects
  */
-#define FAST_EQUAL(selfIndex, otherIndex) (comparison ? comparison(self[selfIndex], array[otherIndex]) : (selfHashes[selfIndex] == arrayHashes[otherIndex] && [self[selfIndex] isEqual:array[otherIndex]]))
+#define FAST_EQUAL(selfIndex, otherIndex) (comparison ? comparison(self[selfIndex], array[otherIndex]) : (selfHashes[selfIndex] == arrayHashes[otherIndex] && ASObjectIsEqual(self[selfIndex], array[otherIndex])))
 
 @implementation NSArray (Diffing)
 

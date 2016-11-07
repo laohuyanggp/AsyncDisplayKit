@@ -399,18 +399,23 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 
     // Make assertions about what they implement, unless they are suppressed.
     if (self.test_suppressCallbackImplementationAssertions == NO) {
-      // If they implement the functional method, they should not implement the other ones.
+      // If they implement the functional method, they should not implement the classic ones.
       if (_asyncDataSourceFlags.dataForCollectionNode) {
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionNode:)]);
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)]);
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:numberOfItemsInSection:)]);
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:numberOfItemsInSection:)]);
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeBlockForItemAtIndexPath:)]);
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeBlockForItemAtIndexPath:)]);
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeForItemAtIndexPath:)]);
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeForItemAtIndexPath:)]);
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeForSupplementaryElementOfKind:atIndexPath:)]);
-        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeForSupplementaryElementOfKind:atIndexPath:)]);
+        SEL legacySelectors[] = {
+          @selector(numberOfSectionsInCollectionNode:),
+          @selector(numberOfSectionsInCollectionView:),
+          @selector(collectionNode:nodeForItemAtIndexPath:),
+          @selector(collectionView:nodeForItemAtIndexPath:),
+          @selector(collectionNode:nodeBlockForItemAtIndexPath:),
+          @selector(collectionView:nodeBlockForItemAtIndexPath:),
+          @selector(collectionNode:numberOfItemsInSection:),
+          @selector(collectionView:numberOfItemsInSection:),
+          @selector(collectionNode:nodeForSupplementaryElementOfKind:atIndexPath:),
+          @selector(collectionView:nodeForSupplementaryElementOfKind:atIndexPath:)
+        };
+        for (SEL s : legacySelectors) {
+          ASDisplayNodeAssert([_asyncDataSource respondsToSelector:s] == NO, @"If data source implements dataForCollectionNode:, it should not implement %@", NSStringFromSelector(s));
+        }
       } else {
         ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNumberOfItemsInSection || _asyncDataSourceFlags.collectionViewNumberOfItemsInSection, @"Data source must implement collectionNode:numberOfItemsInSection:");
         ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNodeBlockForItem

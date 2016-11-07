@@ -74,6 +74,7 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
  * @param nodeBlock A block that will be used to construct the node for the item.
  *
  * @note If an item already exists with this identifier, the node block will be ignored.
+ * @note It is more performant to specify the node block inline here, rather than calling a method that generates it, but the difference is not prohibitive.
  */
 - (void)addItemWithIdentifier:(ASItemIdentifier)identifier
                     nodeBlock:(ASCellNodeBlock)nodeBlock;
@@ -88,6 +89,7 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
  * @param nodeBlock A block that will be used to construct the node for the supplementary element.
  *
  * @note If an element already exists with this identifier, the node block will be ignored.
+ * @note It is more performant to specify the node block inline here, rather than calling a method that generates it, but the difference is not prohibitive.
  */
 - (void)addSupplementaryElementOfKind:(NSString *)elementKind
                        withIdentifier:(ASItemIdentifier)identifier
@@ -104,6 +106,7 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
  * The returned item can be inserted into the @c mutableItems of an @c ASCollectionSection.
  *
  * Note that if an item already exists with this identifier, the node block will be ignored.
+ * @note It is more performant to specify the node block inline here, rather than calling a method that generates it, but the difference is not prohibitive.
  */
 - (id<ASCollectionItem>)itemWithIdentifier:(ASItemIdentifier)identifier
                                  nodeBlock:(ASCellNodeBlock)nodeBlock;

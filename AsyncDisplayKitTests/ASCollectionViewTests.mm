@@ -100,6 +100,8 @@
     return _useFunctionalStyle == NO;
   } else if (aSelector == @selector(numberOfSectionsInCollectionNode:)) {
     return _useFunctionalStyle == NO;
+  } else if (aSelector == @selector(collectionNode:nodeForSupplementaryElementOfKind:atIndexPath:)) {
+    return _useFunctionalStyle == NO;
   } else {
     return [super respondsToSelector:aSelector];
   }
@@ -112,6 +114,10 @@
   ASDisplayNodeAssert(data.mutableSections.count == 0, @"Should get a fresh data each time!");
   [_sections enumerateObjectsUsingBlock:^(NSString *sectionID, NSUInteger idx, BOOL * _Nonnull stop) {
     [data addSectionWithIdentifier:sectionID block:^(ASCollectionData * data) {
+      NSString *headerID = [NSString stringWithFormat:@"Header for section %@", sectionID];
+      [data addSupplementaryElementOfKind:UICollectionElementKindSectionHeader withIdentifier:headerID index:0 nodeBlock:^ASCellNode * _Nonnull{
+        return [[ASCellNode alloc] init];
+      }];
       for (NSString *item in _items[idx]) {
         [data addItemWithIdentifier:item
                           nodeBlock:^{

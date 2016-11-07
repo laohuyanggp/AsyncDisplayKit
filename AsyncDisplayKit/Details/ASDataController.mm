@@ -532,7 +532,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
 - (ASCellNodeBlock)nodeBlockForItemAtIndexPath:(NSIndexPath *)indexPath
 {
   if (self.supportsDeclarativeData) {
-    return [self.currentData itemAtIndexPath:indexPath].nodeBlock;
+    return [self.currentData elementOfKind:ASDataControllerRowNodeKind atIndexPath:indexPath].nodeBlock;
   } else {
     return [_dataSource dataController:self nodeBlockAtIndexPath:indexPath];
   }

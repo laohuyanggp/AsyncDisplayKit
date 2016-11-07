@@ -16,6 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 typedef NSString * ASSectionIdentifier;
 typedef NSString * ASItemIdentifier;
+typedef NSString * ASSupplementaryElementKind;
 
 /**
  * ASCellNode creation block. Used to lazily create the ASCellNode instance for an item.
@@ -76,6 +77,22 @@ typedef ASCellNode * _Nonnull(^ASCellNodeBlock)();
  */
 - (void)addItemWithIdentifier:(ASItemIdentifier)identifier
                     nodeBlock:(ASCellNodeBlock)nodeBlock;
+
+/**
+ * Adds a supplementary element to the current section. If this method is called outside of an addSectionWithIdentifier:
+ * block, a default section will be created and used.
+ *
+ * @param elementKind The kind of supplementary element to add.
+ * @param identifier The identifier for the new item.
+ * @param index The index for the supplementary element. This can be @c NSNotFound.
+ * @param nodeBlock A block that will be used to construct the node for the supplementary element.
+ *
+ * @note If an element already exists with this identifier, the node block will be ignored.
+ */
+- (void)addSupplementaryElementOfKind:(NSString *)elementKind
+                       withIdentifier:(ASItemIdentifier)identifier
+                                index:(NSInteger)index
+                            nodeBlock:(ASCellNodeBlock)nodeBlock;
 
 /**
  * Finds or creates an item with the given identifier.

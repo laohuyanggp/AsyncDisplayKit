@@ -16,6 +16,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * An item (or supplementary element) in a collection.
+ * 
+ * NOTE: Hashing and equality are based on identifier.
+ */
 @interface ASCollectionItemImpl : NSObject <ASCollectionItem, ASDescriptionProvider>
 
 // NOTE: This property is nilled out after it is read.
@@ -30,6 +35,10 @@ NS_ASSUME_NONNULL_BEGIN
  * used in somewhat different ways, and have different lifetimes.
  *
  * NOTE: When a section is copied, its items array is reset to empty.
+ * NOTE: Hashing and equality are based on identifier AND supplementary element set.
+ *   - This is because currently the only way we can reconfigure the supplementary elements
+ *     in a given section is by reloading the section. This doesn't discard the items in that 
+ *     section, so changing this should not be very high priority.
  */
 @interface ASCollectionSectionImpl : NSObject <ASCollectionSection, ASDescriptionProvider, NSCopying>
 
@@ -37,6 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 // Private properties
 @property (nonatomic, strong, readonly) NSArray<ASCollectionItemImpl *> *itemsInternal;
+@property (nonatomic, strong, readonly) NSMutableDictionary<NSString *, NSMutableDictionary<NSNumber *, ASCollectionItemImpl *> *> *supplementaryElements;
 @end
 
 @interface ASCollectionData () <ASDescriptionProvider>
@@ -54,10 +64,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) std::vector<NSInteger> itemCounts;
 
 /// Retrieve the item at the given index path. Must be completed.
-- (ASCollectionItemImpl *)itemAtIndexPath:(NSIndexPath *)indexPath;
+- (ASCollectionItemImpl *)elementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath;
 
 // Call this when editing the data is done.
 - (void)markCompleted;
+
+@property (nonatomic, copy, readonly) NSMutableSet<ASSupplementaryElementKind> *allSupplementaryKinds;
 
 @end
 

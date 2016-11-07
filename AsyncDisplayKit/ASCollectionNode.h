@@ -159,6 +159,8 @@ NS_ASSUME_NONNULL_BEGIN
  * `registerClass:forSupplementaryViewOfKind:withReuseIdentifier:` and `registerNib:forSupplementaryViewOfKind:withReuseIdentifier:`
  * methods. This method will register an internal backing view that will host the contents of the supplementary nodes
  * returned from the data source.
+ *
+ * @note If the data source implements @c dataForCollectionNode: you do not need to call this method.
  */
 - (void)registerSupplementaryNodeOfKind:(NSString *)elementKind;
 

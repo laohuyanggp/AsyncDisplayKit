@@ -27,6 +27,7 @@
 #import "ASSectionContext.h"
 #import "ASCollectionView+Undeprecated.h"
 #import "ASCollectionInternal.h"
+#import "ASCollectionDataInternal.h"
 
 /// What, if any, invalidation should we perform during the next -layoutSubviews.
 typedef NS_ENUM(NSUInteger, ASCollectionViewInvalidationStyle) {
@@ -408,6 +409,8 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
         ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeBlockForItemAtIndexPath:)]);
         ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeForItemAtIndexPath:)]);
         ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeForItemAtIndexPath:)]);
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionView:nodeForSupplementaryElementOfKind:atIndexPath:)]);
+        ASDisplayNodeAssertFalse([_asyncDataSource respondsToSelector:@selector(collectionNode:nodeForSupplementaryElementOfKind:atIndexPath:)]);
       } else {
         ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNumberOfItemsInSection || _asyncDataSourceFlags.collectionViewNumberOfItemsInSection, @"Data source must implement collectionNode:numberOfItemsInSection:");
         ASDisplayNodeAssert(_asyncDataSourceFlags.collectionNodeNodeBlockForItem
@@ -780,7 +783,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   NSString *identifier = [self __reuseIdentifierForKind:kind];
   UICollectionReusableView *view = [self dequeueReusableSupplementaryViewOfKind:kind withReuseIdentifier:identifier forIndexPath:indexPath];
   ASCellNode *node = [_dataController supplementaryNodeOfKind:kind atIndexPath:indexPath];
-  ASDisplayNodeAssert(node != nil, @"Supplementary node should exist.  Kind = %@, indexPath = %@, collectionDataSource = %@", kind, indexPath, self);
+  ASDisplayNodeAssert(node != nil, @"Layout included a supplementary element that we don't have a node for! Kind = %@, indexPath = %@, collectionDataSource = %@", kind, indexPath, self);
   [_rangeController configureContentView:view forCellNode:node];
   return view;
 }
@@ -1271,7 +1274,16 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 - (ASCollectionData *)dataForDataController:(ASDataController *)dataController
 {
   if (_asyncDataSourceFlags.dataForCollectionNode) {
-    return [_asyncDataSource dataForCollectionNode:self.collectionNode];
+    ASCollectionData *data = [_asyncDataSource dataForCollectionNode:self.collectionNode];
+
+    // Automatically update our supplementary node registrations.
+    NSMutableSet *supplementaryKindsToRegister = [data allSupplementaryKinds];
+    [supplementaryKindsToRegister minusSet:_registeredSupplementaryKinds];
+    for (ASSupplementaryElementKind kind in supplementaryKindsToRegister) {
+      [self registerSupplementaryNodeOfKind:kind];
+    }
+
+    return data;
   } else {
     ASDisplayNodeFailAssert(@"Data controller called %@ but our data source doesn't implement it.", NSStringFromSelector(_cmd));
     return nil;
